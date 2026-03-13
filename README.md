@@ -34,6 +34,8 @@ Dans Clustering Clients
 - Tout refaire
 - Faire un algo des KNN
 - Faire un graphique et colorer les points 
-- 
+
+Dans recommandation
+- On veut que cette page utilise notre modèle des KNN pour que nos informations saisies nous renvoies le vhéhicule le plus similaire
 
 
