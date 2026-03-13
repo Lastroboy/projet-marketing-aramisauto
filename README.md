@@ -1,2 +1,35 @@
 # projet-marketing-aramisauto
 Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
+
+
+## Chose à modifier
+
+Dans la page de présentation
+- Pas de camembert / pas de graphique
+- On enlève la bulle à retenir
+- Changer l'age moyen du véhicule et la calculer en fonction de la date d'achat
+- On enlève le tableau des noms de variables
+- On enlèe le tableau pipeline blabla
+
+
+Dans analyse exploratoire
+- Changer tous les graphiques
+- Supprimer la heatmap
+- Changer le graphique sur les carburants
+
+Pour la partie client on veut les graphiques suivant :
+Le type de véhcule par tranche d'age.
+Le sexe le plus représenté.
+Le type de financement par tranche d'age.
+
+Pour la partie véhicule on veut les graphiques suivant :
+- Les 10 équipements les plus demandés. (On garde) et à vérifier
+- Le carburant le plus demandé (On vérifie)
+- Top 15 marques vendues
+- Les catégories de véhicules (bar plot)
+- Distributions du prix selon les véhicules neuf et d'occasion (ON GARDE) juste modification de l'ordonnée en pourcentage
+
+- 
+- 
+
+
