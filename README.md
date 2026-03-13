@@ -30,6 +30,7 @@ Pour la partie véhicule on veut les graphiques suivant :
 - Distributions du prix selon les véhicules neuf et d'occasion (ON GARDE) juste modification de l'ordonnée en pourcentage
 
 Dans Clustering Clients
+- Rajouter un pragraphe sur nos 3 hypothèses
 - Tout refaire
 - Faire un algo des KNN
 - Faire un graphique et colorer les points 
