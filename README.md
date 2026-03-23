@@ -23,6 +23,7 @@ Dans analyse exploratoire
 - Changer tous les graphiques
 - Supprimer la heatmap
 - Changer le graphique sur les carburants
+- Rajouter des bulles statistiques pour que ça saute au yeux
 
 Pour la partie client on veut les graphiques suivant :
 Le type de véhcule par tranche d'age.
