@@ -1,4 +1,4 @@
-# projet-marketing-aramisauto
+# Projet de marketing pour Aramisauto
 Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
 
 ## Peut être à rajouter plus tard
@@ -18,7 +18,6 @@ Dans la page de présentation
 - Changer l'age moyen du véhicule et la calculer en fonction de la date d'achat [FAIT]
 - On enlève le tableau des noms de variables [A REFLECHIR]
 - On enlèe le tableau pipeline blabla [FAIT]
-
 
 Dans analyse exploratoire
 - Changer tous les graphiques
@@ -42,7 +41,8 @@ Dans Clustering Clients
 - Rajouter un pragraphe sur nos 3 hypothèses
 - Tout refaire
 - Faire un algo des KNN
-- Faire un graphique et colorer les points 
+- Faire un graphique et colorer les points
+- Faire une segmentation RFM (dans le cours) [A REVOIR]
 
 Dans recommandation
 - On veut que cette page utilise notre modèle des KNN pour que nos informations saisies nous renvoies le vhéhicule le plus similaire
