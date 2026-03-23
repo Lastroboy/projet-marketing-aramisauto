@@ -4,6 +4,9 @@ Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
 
 ## Chose à modifier
 
+Dans les bulles à retenir
+- Corriger l'affichage [FAIT]
+
 Dans la zone des filtres
 - Ajouter un bouton reset rapide
 - Rajouter le filtre type de livraiso ? Pertinent ou pas [A REFLECHIR]
