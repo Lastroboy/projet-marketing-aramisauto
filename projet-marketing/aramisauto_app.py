@@ -45,7 +45,7 @@ st.markdown(f"""
         background-color: {BG_PAGE};
         color: #1E293B;
     }}
-    .block-container {{ padding-top: 1.5rem; padding-bottom: 2rem; max-width: 1280px; }}
+    .block-container {{ padding-top: 3rem; padding-bottom: 2rem; max-width: 1280px; }}
 
     .page-header {{
         display: flex; align-items: center; gap: 16px;
@@ -212,7 +212,6 @@ def load_data():
 
 df = load_data()
 
-
 # ─────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────
@@ -270,7 +269,7 @@ with tab1:
         (f"{len(df):,}", "Transactions"),
         (f"{df['VEHICULE_MARQUE'].nunique()}", "Marques"),
         (f"{df['VEHICULE_MODELE'].nunique()}", "Modèles"),
-        (f"{int(df['PRIX_VENTE_TTC_COM'].mean()):,} €", "Prix moyen"),
+        (f"{int(df['PRIX_VENTE_TTC_COM'].mean()):,} €", "Prix de vente moyen"),
         (f"{int(df['AGE'].mean())} ans", "Âge moyen"),
     ]
     for col, (val, label) in zip([k1, k2, k3, k4, k5], kpis):
@@ -282,59 +281,42 @@ with tab1:
             </div>""", unsafe_allow_html=True)
 
     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-    col_l, col_r = st.columns([1.2, 1])
+    
+    section("Objectifs du projet")
+    st.markdown("""
+                Ce dashboard est destiné aux équipes **marketing d'Aramisauto** pour :
 
-    with col_l:
-        section("Objectifs du projet")
-        st.markdown("""
-Ce dashboard est destiné aux équipes **marketing d'Aramisauto** pour :
+                - **Analyser** les profils socio-démographiques et les préférences véhicules des clients
+                - **Segmenter** la base clients en groupes homogènes pour des campagnes ciblées
+                - **Recommander** des véhicules adaptés à chaque profil prospect
+                - **Piloter** les stratégies d'acquisition et de rétention
+                """)
+    
+    insight("L'<strong>Essence domine</strong> avec ~56 % des ventes, " \
+    "suivie de l'Hybride (20 %) et du Diesel (19 %). " \
+    "L'Électrique reste marginal (~4 %) mais représente un segment à fort potentiel de croissance.", title="💡 À retenir")
+    
+    section("Variables clés du dataset")
+    schema = pd.DataFrame({
+        "Variable": [
+            "AGE / GENDER", "PRIX_VENTE_TTC_COM", "VEHICULE_MARQUE / MODELE",
+            "VEHICULE_ENERGIE", "VEHICULE_CATEGORIE", "VEHICULE_KM",
+            "TYPE_LIVRAISON_COM", "FI_TYPE", "NEAREST_AGENCY_DISTANCE"
+            ],
 
-- **Analyser** les profils socio-démographiques et les préférences véhicules des clients
-- **Segmenter** la base clients en groupes homogènes pour des campagnes ciblées
-- **Recommander** des véhicules adaptés à chaque profil prospect
-- **Piloter** les stratégies d'acquisition et de rétention
-        """)
-        section("Variables clés du dataset")
-        schema = pd.DataFrame({
-            "Variable": ["AGE / GENDER", "PRIX_VENTE_TTC_COM", "VEHICULE_MARQUE / MODELE",
-                         "VEHICULE_ENERGIE", "VEHICULE_CATEGORIE", "VEHICULE_KM",
-                         "TYPE_LIVRAISON_COM", "FI_TYPE", "NEAREST_AGENCY_DISTANCE"],
-            "Description": [
-                "Profil démographique du client",
-                "Prix de vente TTC (€)",
-                "Marque et modèle achetés",
-                "Essence · Diesel · Hybride · Électrique",
-                "SUV · Citadine · Berline · Break…",
-                "Kilométrage au compteur",
-                "En agence ou livraison à domicile",
-                "Mode de financement (Crédit, LOA)",
-                "Distance client → agence la plus proche (km)"
-            ]
-        })
-        st.dataframe(schema, hide_index=True, use_container_width=True)
-
-    with col_r:
-        section("Répartition des ventes par énergie")
-        ener_counts = df["VEHICULE_ENERGIE"].value_counts().reset_index()
-        ener_counts.columns = ["Énergie", "Nb"]
-        fig = px.pie(ener_counts, values="Nb", names="Énergie", hole=0.55,
-                     color_discrete_sequence=CHART_COLORS)
-        fig.update_traces(textposition="outside", textinfo="percent+label")
-        fig = chart_defaults(fig, h=280)
-        fig.update_layout(showlegend=False, margin=dict(t=20, b=20))
-        st.plotly_chart(fig, use_container_width=True)
-        insight("""
-        L'<strong>Essence domine</strong> avec ~56 % des ventes, suivie de l'Hybride (20 %) et du Diesel (19 %).
-        L'Électrique reste marginal (~4 %) mais représente un segment à fort potentiel de croissance.
-        """, title="💡 À retenir")
-
-        section("Pipeline analytique")
-        pipeline = pd.DataFrame({
-            "Étape": ["Données brutes", "Nettoyage & enrichissement",
-                      "Analyse exploratoire", "Clustering K-Means", "Recommandation KNN"],
-            "Statut": ["✅", "✅", "📊 Onglet 2", "🔵 Onglet 3", "🎯 Onglet 4"]
-        })
-        st.dataframe(pipeline, hide_index=True, use_container_width=True)
+        "Description": [
+            "Profil démographique du client",
+            "Prix de vente TTC (€)",
+            "Marque et modèle achetés",
+            "Essence · Diesel · Hybride · Électrique",
+            "SUV · Citadine · Berline · Break…",
+            "Kilométrage au compteur",
+            "En agence ou livraison à domicile",
+            "Mode de financement (Crédit, LOA)",
+            "Distance client → agence la plus proche (km)"
+            ]})
+    
+    st.dataframe(schema, hide_index=True, use_container_width=True)
 
     with st.expander("🔍 Aperçu des données brutes"):
         st.dataframe(df.head(20), use_container_width=True)
@@ -358,11 +340,11 @@ with tab2:
                                color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
                                labels={"AGE": "Âge", "GENDER_LABEL": "Genre"})
             st.plotly_chart(chart_defaults(fig), use_container_width=True)
-            insight("""
-            La clientèle est majoritairement <strong>masculine (66 %)</strong> avec une distribution bimodale :
-            pic chez les <strong>35–45 ans</strong> (primo-acheteurs actifs) et un second chez les <strong>55–65 ans</strong>
-            (fort pouvoir d'achat). Les femmes sont légèrement plus jeunes en moyenne.
-            """)
+
+            insight("La clientèle est majoritairement <strong>masculine (66 %) </strong> avec une distribution bimodale : " \
+            "pic chez les <strong>35–45 ans</strong> (primo-acheteurs actifs) et " \
+            "un second chez les <strong>55–65 ans</strong (fort pouvoir d'achat). " \
+            "Les femmes sont légèrement plus jeunes en moyenne.")
 
         with c2:
             section("Répartition par genre")
@@ -509,14 +491,13 @@ with tab2:
 with tab3:
     st.markdown("#### Segmentation non supervisée de la clientèle")
 
-    insight("""
-    <strong>Qu'est-ce que le clustering K-Means ?</strong><br>
-    L'algorithme regroupe automatiquement les clients en <em>k</em> segments homogènes en minimisant la variance à l'intérieur de chaque groupe.
-    Les variables utilisées sont : <strong>Âge, Prix d'achat, Kilométrage, Distance à l'agence, Genre, Énergie et Catégorie du véhicule</strong>.
-    Toutes les variables sont normalisées pour éviter les biais d'échelle.
-    <br><br>
-    Utilisez le curseur ci-dessous pour explorer différents nombres de segments et trouver la segmentation la plus utile pour le marketing.
-    """, title="ℹ️ Comment fonctionne cet onglet ?")
+    insight("<strong>Qu'est-ce que le clustering K-Means ?</strong><br> " \
+    "L'algorithme regroupe automatiquement les clients en <em>k</em> segments homogènes en minimisant la variance à l'intérieur de chaque groupe. " \
+    "Les variables utilisées sont : <strong>Âge, Prix d'achat, Kilométrage, Distance à l'agence, Genre, Énergie et Catégorie du véhicule</strong>. " \
+    "Toutes les variables sont normalisées pour éviter les biais d'échelle. "
+    "<br><br> " \
+    "Utilisez le curseur ci-dessous pour explorer différents nombres de segments et trouver la segmentation la plus utile pour le marketing.", 
+    title="ℹ️ Comment fonctionne cet onglet ?")
 
     col_param, _ = st.columns([1, 3])
     with col_param:
@@ -574,14 +555,13 @@ with tab3:
     fig_pca.update_traces(marker=dict(size=5))
     st.plotly_chart(chart_defaults(fig_pca, h=420), use_container_width=True)
 
-    insight("""
-    <strong>Comment lire ce graphique ?</strong><br>
-    Chaque point représente un client. L'ACP compresse les 7 variables en 2 dimensions pour la visualisation.
-    Des nuages <strong>bien séparés</strong> = segments distincts = campagnes très différenciées possibles.
-    Un <strong>chevauchement</strong> = profils clients proches sur certaines dimensions — messages plus nuancés.
-    <br><br>
-    👉 <strong>Conseil marketing</strong> : les segments éloignés les uns des autres méritent des offres et des canaux de communication radicalement différents.
-    """)
+    insight("<strong>Comment lire ce graphique ?</strong><br> " \
+    "Chaque point représente un client. L'ACP compresse les 7 variables en 2 dimensions pour la visualisation. " \
+    "Des nuages <strong>bien séparés</strong> = segments distincts = campagnes très différenciées possibles. " \
+    "Un <strong>chevauchement</strong> = profils clients proches sur certaines dimensions — messages plus nuancés. "
+    "<br><br> " \
+    "👉 <strong>Conseil marketing</strong> : les segments éloignés les uns des autres méritent des offres et " \
+    "des canaux de communication radicalement différents.")
 
     # ── Tableau profil ──
     section("Profil moyen par segment")
@@ -605,11 +585,9 @@ with tab3:
                                 "Énergie dom.", "Catégorie dom.", "Marque fav."]
     st.dataframe(cluster_profile, hide_index=True, use_container_width=True)
 
-    insight("""
-    Ce tableau synthétise les caractéristiques <strong>moyennes</strong> de chaque segment.
-    Focalisez-vous sur <strong>Prix moyen</strong> et <strong>Catégorie dominante</strong> pour évaluer la valeur commerciale de chaque groupe,
-    et sur l'<strong>Âge moyen</strong> pour choisir les canaux de communication appropriés (digital vs. traditionnel).
-    """)
+    insight("Ce tableau synthétise les caractéristiques <strong>moyennes</strong> de chaque segment. " \
+    "Focalisez-vous sur <strong>Prix moyen</strong> et <strong>Catégorie dominante</strong> pour évaluer la valeur commerciale de chaque groupe, " \
+    "et sur l'<strong>Âge moyen</strong> pour choisir les canaux de communication appropriés (digital vs. traditionnel).")
 
     # ── Personas ──
     section("Fiches Persona — Portrait de chaque segment")
@@ -638,12 +616,11 @@ with tab3:
             </div>""", unsafe_allow_html=True)
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    insight("""
-    Ces fiches permettent à l'équipe marketing de <strong>nommer chaque segment</strong>
-    (ex : "Famille SUV Hybride", "Jeune primo-accédant citadine", "Senior berline premium").
-    Chaque persona doit être associé à un <strong>message publicitaire, un canal et une offre spécifiques</strong>
-    pour maximiser l'efficacité des campagnes.
-    """, title="💡 Usage marketing des personas")
+    insight("Ces fiches permettent à l'équipe marketing de <strong>nommer chaque segment</strong> "
+    "(ex : 'Famille SUV Hybride', 'Jeune primo-accédant citadine', 'Senior berline premium'). "
+    "Chaque persona doit être associé à un <strong>message publicitaire, un canal et une offre spécifiques</strong> "
+    "pour maximiser l'efficacité des campagnes.", 
+    title="💡 Usage marketing des personas")
 
     # ── Radar ──
     section("Radar — Comparaison normalisée des segments")
@@ -675,15 +652,13 @@ with tab3:
     )
     st.plotly_chart(fig_radar, use_container_width=True)
 
-    insight("""
-    <strong>Comment lire le radar ?</strong><br>
-    Chaque axe représente une variable normalisée entre 0 et 1. La forme de chaque segment reflète son profil :
-    <br>• <strong>Grand et régulier</strong> = profil "équilibré" sur toutes les dimensions
-    <br>• <strong>Pointu sur un axe</strong> = caractéristique forte et différenciante
-    <br><br>
-    Exemple : un segment fort sur <strong>Prix</strong> et faible sur <strong>Kilométrage</strong> = acheteurs de VN ou quasi-neufs.
-    Fort sur <strong>Kilométrage</strong> et faible sur <strong>Prix</strong> = acheteurs de VO à budget contraint.
-    """)
+    insight("<strong>Comment lire le radar ?</strong><br>" \
+    " Chaque axe représente une variable normalisée entre 0 et 1. La forme de chaque segment reflète son profil : "
+    "<br>• <strong>Grand et régulier</strong> = profil 'équilibré' sur toutes les dimensions "
+    "<br>• <strong>Pointu sur un axe</strong> = caractéristique forte et différenciante"
+    "<br><br>" \
+    "Exemple : un segment fort sur <strong>Prix</strong> et faible sur <strong>Kilométrage</strong> = acheteurs de VN ou quasi-neufs. " \
+    "Fort sur <strong>Kilométrage</strong> et faible sur <strong>Prix</strong> = acheteurs de VO à budget contraint.")
 
     # ── Barres ──
     ca, cb = st.columns(2)
@@ -703,22 +678,19 @@ with tab3:
                      labels={"CLUSTER_LABEL": "Segment", "Nb": "Transactions"})
         st.plotly_chart(chart_defaults(fig), use_container_width=True)
 
-    insight("""
-    Ces deux graphiques permettent de <strong>qualifier la préférence produit</strong> de chaque segment.
-    Un segment dominé par des SUV Hybrides à prix élevé = cible <strong>premium / écologique</strong> → arguments confort + impact carbone.
-    Un segment de Citadines Essence à faible kilométrage = <strong>jeunes actifs urbains</strong> sensibles au prix → promotions et financement facilité.
-    """, title="💡 Lecture combinée Énergie + Catégorie")
+    insight("Ces deux graphiques permettent de <strong>qualifier la préférence produit</strong> de chaque segment. " \
+    "Un segment dominé par des SUV Hybrides à prix élevé = cible <strong>premium / écologique</strong> → arguments confort + impact carbone. " \
+    "Un segment de Citadines Essence à faible kilométrage = <strong>jeunes actifs urbains</strong> sensibles au prix → promotions et financement facilité.", 
+    title="💡 Lecture combinée Énergie + Catégorie")
 
     # ── Elbow ──
     with st.expander("📈 Aide au choix du nombre de segments — Méthode du coude"):
-        insight("""
-        <strong>Comment choisir le bon k ?</strong><br>
-        • <strong>Courbe d'inertie</strong> (bleue) : mesure la compacité des clusters.
-        Elle décroît à chaque k ajouté. Cherchez le <em>coude</em> — le point où le gain devient marginal.<br>
-        • <strong>Score Silhouette</strong> (rouge) : mesure la séparabilité entre clusters.
-        Choisissez le k qui <strong>maximise ce score</strong>.<br><br>
-        En règle générale, le k optimal se situe entre 3 et 6 sur des données retail.
-        """)
+        insight("<strong>Comment choisir le bon k ?</strong><br>" \
+        "• <strong>Courbe d'inertie</strong> (bleue) : mesure la compacité des clusters. " \
+        "Elle décroît à chaque k ajouté. Cherchez le <em>coude</em> — le point où le gain devient marginal.<br> " \
+        "• <strong>Score Silhouette</strong> (rouge) : mesure la séparabilité entre clusters. " \
+        "Choisissez le k qui <strong>maximise ce score</strong>.<br><br> " \
+        "En règle générale, le k optimal se situe entre 3 et 6 sur des données retail.")
 
         @st.cache_data
         def compute_inertia(data):
@@ -755,16 +727,15 @@ with tab3:
 with tab4:
     st.markdown("#### Recommandation de véhicules personnalisée")
 
-    insight("""
-    <strong>Comment fonctionne cet outil ?</strong><br>
-    Renseignez le profil d'un prospect. L'algorithme <strong>K-Nearest Neighbors (KNN)</strong>
-    identifie les 20 transactions historiques les plus proches de ce profil en termes d'âge, de budget,
-    de kilométrage et de préférences. Il agrège ensuite les modèles de véhicules les plus fréquemment
-    achetés dans ce voisinage et vous retourne une liste triée par pertinence.
-    <br><br>
-    👉 Ces recommandations peuvent alimenter des <strong>emails personnalisés, des relances téléphoniques
-    ou des pages produit dynamiques</strong> sur le site Aramisauto.
-    """, title="ℹ️ Fonctionnement de la recommandation KNN")
+    insight("<strong>Comment fonctionne cet outil ?</strong><br> " \
+    "Renseignez le profil d'un prospect. L'algorithme <strong>K-Nearest Neighbors (KNN)</strong> " \
+    "identifie les 20 transactions historiques les plus proches de ce profil en termes d'âge, de budget, " \
+    "de kilométrage et de préférences. Il agrège ensuite les modèles de véhicules les plus fréquemment " \
+    "achetés dans ce voisinage et vous retourne une liste triée par pertinence. "
+    "<br><br> " \
+    "👉 Ces recommandations peuvent alimenter des <strong>emails personnalisés, des relances téléphoniques " \
+    "ou des pages produit dynamiques</strong> sur le site Aramisauto.", 
+    title="ℹ️ Fonctionnement de la recommandation KNN")
 
     @st.cache_data
     def build_reco_model(data):
@@ -855,14 +826,13 @@ with tab4:
                             </div>
                         </div>""", unsafe_allow_html=True)
 
-                insight(f"""
-                Les véhicules listés correspondent à ceux achetés par des clients au profil similaire dans l'historique
-                (<strong>{r_age} ans, budget {r_budget:,} €, {r_energie} · {r_categorie}</strong>).
-                Le modèle #1 est celui le plus fréquemment acheté parmi les 20 clients les plus proches.
-                <br><br>
-                👉 <strong>Pour l'équipe commerciale</strong> : utilisez ces résultats pour personnaliser
-                les emails de nurturing, les relances ou les landing pages produit.
-                """, title="💡 Comment utiliser ces résultats ?")
+                insight(f"""Les véhicules listés correspondent à ceux achetés par des clients au profil similaire dans l'historique 
+                        (<strong>{r_age} ans, budget {r_budget:,} €, {r_energie} · {r_categorie}</strong>).
+                        Le modèle #1 est celui le plus fréquemment acheté parmi les 20 clients les plus proches.
+                        <br><br>
+                        👉 <strong>Pour l'équipe commerciale</strong> : utilisez ces résultats pour personnaliser
+                        les emails de nurturing, les relances ou les landing pages produit.""",
+                        title="💡 Comment utiliser ces résultats ?")
 
                 section("Comparatif prix des véhicules recommandés vs votre budget")
                 fig_reco = px.bar(
