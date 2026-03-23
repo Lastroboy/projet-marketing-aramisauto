@@ -2,10 +2,7 @@
 Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
 
 ## Peut être à rajouter plus tard
-- Répartition géographique (carte interactive).
-
-
-
+- Répartition géographique (carte interactive). st.map pour la répartition géographique
 ## Chose à modifier
 
 Dans les bulles à retenir
