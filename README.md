@@ -1,7 +1,6 @@
 # projet-marketing-aramisauto
 Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
 
-Je fais un test sur github, pas de panic
 
 ## Chose à modifier
 
