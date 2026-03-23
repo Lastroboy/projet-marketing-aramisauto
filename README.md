@@ -1,6 +1,10 @@
 # projet-marketing-aramisauto
 Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
 
+## Peut être à rajouter plus tard
+- Répartition géographique (carte interactive).
+
+
 
 ## Chose à modifier
 
