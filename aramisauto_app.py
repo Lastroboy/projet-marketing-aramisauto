@@ -264,7 +264,6 @@ mask = (
 dff = df[mask].copy()
 
 
-
 # ─────────────────────────────────────────
 # TABS
 # ─────────────────────────────────────────
@@ -358,7 +357,7 @@ with tab1:
 # TAB 2 — ANALYSE EXPLORATOIRE
 # ════════════════════════════════════════
 with tab2:
-    st.caption(f"**{len(dff):,} transactions** correspondent aux filtres actifs")
+    st.caption(f"**{len(dff):,} transactions** correspondent aux filtres actifs · Modifiez-les dans la colonne de gauche.")
 
     sub_client, sub_vehicule = st.tabs(["👤  Profil Clients", "🚘  Profil Véhicules"])
 
@@ -366,26 +365,70 @@ with tab2:
     with sub_client:
         c1, c2 = st.columns(2)
         with c1:
-            section("Distribution des âges par genre")
-            fig = px.histogram(dff, x="AGE", nbins=28, color="GENDER_LABEL",
-                               barmode="overlay", opacity=0.75,
-                               color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
-                               labels={"AGE": "Âge", "GENDER_LABEL": "Genre"})
-            st.plotly_chart(chart_defaults(fig), use_container_width=True)
+            section("Achats par tranche d'âge et par genre")
 
-            insight("La clientèle est majoritairement <strong>masculine (66 %) </strong> avec une distribution bimodale : " \
-            "pic chez les <strong>35–45 ans</strong> (primo-acheteurs actifs) et " \
-            "un second chez les <strong>55–65 ans</strong (fort pouvoir d'achat). " \
-            "Les femmes sont légèrement plus jeunes en moyenne.")
+            age_bins = [18, 25, 35, 45, 55, 65, 90]
+            age_labels = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
+            dff['AGE_TRANCHE'] = pd.cut(dff['AGE'], bins=age_bins, right=False, labels=age_labels)
+
+            fig = px.histogram(
+                dff,
+                x="AGE_TRANCHE",
+                color="GENDER_LABEL",
+                barmode="group",
+                color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
+                labels={"AGE_TRANCHE": "Âge", "GENDER_LABEL": "Genre"},
+                category_orders={"AGE_TRANCHE": age_labels},
+            )
+
+            fig.update_layout(
+                xaxis_title="Tranche d'âge",
+                yaxis_title="Nombre transactions",
+                legend_title="Genre",
+                bargap=0.2
+            )
+            fig.update_traces(
+                hovertemplate=(
+                    "Tranche : <b>%{x}</b><br>"
+                    "Nb transactions : <b>%{y}</b><br>"
+                    "<extra></extra>"
+                )
+            )
+
+            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
+
+            insight("La clientèle est majoritairement <strong>masculine (66 %)</strong>. Les tranches <strong>36–45 ans</strong> et <strong>46–55 ans</strong> concentrent le plus de transactions. Les <strong>65+</strong> représentent un segment fidèle à ne pas négliger dans les campagnes de fidélisation.")
 
         with c2:
             section("Répartition par genre")
             g_counts = dff["GENDER_LABEL"].value_counts().reset_index()
             g_counts.columns = ["Genre", "Nb"]
-            fig = px.pie(g_counts, values="Nb", names="Genre", hole=0.6,
-                         color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"})
-            fig.update_traces(textinfo="percent+label", textposition="outside")
-            st.plotly_chart(chart_defaults(fig, h=290), use_container_width=True)
+            g_counts["Pct"] = (g_counts["Nb"] / g_counts["Nb"].sum() * 100).round(1)
+            g_counts["Pct_label"] = g_counts["Pct"].astype(str) + " %"
+
+            fig = px.bar(g_counts, x="Genre", y="Pct",
+                color="Genre",
+                color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
+                text="Pct_label",
+                labels={"Pct": "Part des clients (%)", "Genre": "Genre"},
+                custom_data=["Nb"])
+
+            fig.update_traces(
+                textposition="inside",
+                insidetextanchor="middle",
+                textfont=dict(size=14, color="white", family="Inter"),
+                hovertemplate=(
+                    "<b>%{x}</b><br>"
+                    "Nombre de clients : <b>%{customdata[0]:,}</b><br>"
+                    "Part du total : <b>%{y} %</b>"
+                    "<extra></extra>"
+                )
+            )
+            fig.update_layout(
+                showlegend=True,
+                legend=dict(title="Genre", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
             insight("Le ratio <strong>Homme / Femme est de 66 % / 34 %</strong>. Fort potentiel d'acquisition sur la cible féminine, encore sous-représentée dans le portefeuille client.")
 
         c3, c4 = st.columns(2)
@@ -397,7 +440,7 @@ with tab2:
                          labels={"TRANCHE_AGE": "Tranche d'âge", "Nb": "Transactions"})
             fig.update_layout(coloraxis_showscale=False)
             st.plotly_chart(chart_defaults(fig), use_container_width=True)
-            insight("Les tranches <strong>36–45 ans</strong> et <strong>46–55 ans</strong> concentrent le plus de transactions. Les 65+ représentent un segment fidèle à ne pas négliger dans les campagnes de fidélisation.")
+            insight("GRAPHIQUE A REMPLACER OU SUPPRIMER ICI")
 
         with c4:
             section("Mode de financement")
@@ -408,7 +451,9 @@ with tab2:
                          color_discrete_sequence=[PRIMARY, ACCENT, "#34D399"],
                          labels={"Nb": "Transactions"})
             fig.update_layout(showlegend=False)
+
             st.plotly_chart(chart_defaults(fig), use_container_width=True)
+            
             insight("Parmi les clients ayant renseigné un financement, le <strong>Crédit</strong> est légèrement préféré à la <strong>LOA</strong>. Note : 61 % des transactions n'ont pas de financement renseigné.")
 
         c5, c6 = st.columns(2)
@@ -416,29 +461,64 @@ with tab2:
             section("Mode de livraison")
             livr = dff["TYPE_LIVRAISON_COM"].value_counts().reset_index()
             livr.columns = ["Mode", "Nb"]
-            fig = px.pie(livr, values="Nb", names="Mode", hole=0.55,
-                         color_discrete_sequence=[PRIMARY, "#34D399"])
-            fig.update_traces(textinfo="percent+label", textposition="outside")
-            st.plotly_chart(chart_defaults(fig, h=290), use_container_width=True)
-            insight("<strong>78 % des clients</strong> choisissent le retrait en agence. La livraison à domicile (22 %) est un canal en croissance à valoriser dans les communications marketing.")
+
+            livr["Pct"] = (livr["Nb"] / livr["Nb"].sum() * 100).round(1)
+            livr["Pct_label"] = livr["Pct"].astype(str) + " %"
+
+            fig = px.bar(livr, x="Mode", y="Pct",
+                         color="Mode",
+                         color_discrete_map={"En Agence": PRIMARY, "A Domicile": "#34D399"},
+                         text="Pct_label",
+                         labels={"Pct": "Part des clients (%)", "Mode": "Mode"},
+                custom_data=["Nb"])
+            
+            fig.update_traces(
+                textposition="inside",
+                insidetextanchor="middle",
+                textfont=dict(size=14, color="white", family="Inter"),
+                hovertemplate=(
+                    "<b>%{x}</b><br>"
+                    "Nombre de clients : <b>%{customdata[0]:,}</b><br>"
+                    "Part du total : <b>%{y} %</b>"
+                    "<extra></extra>"
+                )
+            )
+
+            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
+            insight("<strong>78% des clients</strong> choisissent le retrait en agence. La livraison à domicile (22 %) est un canal en croissance à valoriser dans les communications marketing.")
 
         with c6:
             section("Distance à l'agence la plus proche (km)")
             fig = px.histogram(dff, x="NEAREST_AGENCY_DISTANCE", nbins=30,
                                color_discrete_sequence=[ACCENT],
                                labels={"NEAREST_AGENCY_DISTANCE": "Distance (km)"})
-            st.plotly_chart(chart_defaults(fig), use_container_width=True)
+            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
             insight("La majorité des clients habitent à <strong>moins de 50 km</strong> d'une agence. La clientèle est fortement concentrée en zones urbaines denses — à prioriser dans le déploiement des agences.")
 
         section("Top 20 villes")
-        top_villes = dff["VILLE"].value_counts().head(20).reset_index()
+        dff_villes = dff[~dff['VILLE'].isin([np.nan, "x", "X", "NON REPONSE"])]
+        top_villes = dff_villes["VILLE"].value_counts().head(20).reset_index()
+
         top_villes.columns = ["Ville", "Nb"]
-        fig = px.bar(top_villes, x="Nb", y="Ville", orientation="h",
-                     color="Nb", color_continuous_scale=["#DBEAFE", PRIMARY],
-                     labels={"Nb": "Transactions"})
+
+        total = top_villes["Nb"].sum()
+        top_villes["Pct"] = top_villes["Nb"] / total * 100
+        top_villes["Pct_label"] = top_villes["Pct"].map(lambda x: f"{x:.1f}%")
+
+        fig = px.bar(top_villes, x="Pct", y="Ville", orientation="h",
+                     color="Pct", color_continuous_scale=["#DBEAFE", PRIMARY],
+                     labels={"Pct": "Part de transactions (%)", "Ville": "Ville"})
+        fig.update_traces(
+                hovertemplate=(
+                    "Part de transactions (%) : <b>%{x}</b><br>"
+                    "Ville : <b>%{y}</b>"
+                    "<extra></extra>"
+                )
+            )
+        
         fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
         st.plotly_chart(chart_defaults(fig, h=500), use_container_width=True)
-        insight("Paris domine largement, suivie de Lyon, Bordeaux et Marseille. Les grandes métropoles régionales constituent le cœur de la clientèle — à cibler en priorité dans les campagnes géolocalisées.")
+        insight("Paris domine largement, suivie de Nice, Bordeaux et Strasbourg. Les grandes et moyennes métropoles régionales constituent le cœur de la clientèle — à cibler en priorité dans les campagnes géolocalisées.")
 
     # ── VÉHICULES ──
     with sub_vehicule:
