@@ -522,6 +522,38 @@ with tab2:
 
     # ── VÉHICULES ──
     with sub_vehicule:
+        # ── Ligne 1 : Équipements | Carburant ──
+        e1, e2 = st.columns(2)
+        with e1:
+            section("Top 10 équipements les plus demandés")
+            def parse_equip(val):
+                try:
+                    return [item["category"] for item in json.loads(val)]
+                except Exception:
+                    return []
+            equip_series = dff["OFFER_EQUIPMENTS_MAIN_LIST"].dropna().apply(parse_equip)
+            equip_df = equip_series.explode().value_counts().head(10).reset_index()
+            equip_df.columns = ["Équipement", "Nb"]
+            fig = px.bar(equip_df, x="Nb", y="Équipement", orientation="h",
+                         color="Nb", color_continuous_scale=["#DBEAFE", PRIMARY],
+                         labels={"Nb": "Nombre de véhicules", "Équipement": "Équipement"})
+            fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
+            st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
+            insight("La <strong>Climatisation</strong> et le <strong>Bluetooth</strong> sont les équipements les plus fréquents. Les équipements connectés (Apple CarPlay, Android Auto) gagnent en popularité — un argument marketing fort pour les cibles jeunes.")
+
+        with e2:
+            section("Carburant le plus demandé")
+            energie = dff["VEHICULE_ENERGIE"].value_counts().reset_index()
+            energie.columns = ["Carburant", "Nb"]
+            fig = px.bar(energie, x="Carburant", y="Nb",
+                         color="Carburant",
+                         color_discrete_sequence=CHART_COLORS,
+                         labels={"Nb": "Transactions", "Carburant": "Carburant"})
+            fig.update_layout(showlegend=False)
+            st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
+            insight("L'<strong>Essence</strong> domine largement (54 %), suivie de l'<strong>Hybride</strong> (19 %) et du <strong>Diesel</strong> (18 %). La part électrique reste faible (4 %) mais en croissance — à intégrer dans les communications.")
+
+        # ── Ligne 2 : Top 15 marques | Catégories ──
         v1, v2 = st.columns(2)
         with v1:
             section("Top 15 marques vendues")
@@ -544,57 +576,17 @@ with tab2:
             st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
             insight("Les <strong>SUV & 4x4</strong> représentent 54 % des ventes. Les Citadines arrivent 2ème (24 %), prisées par les profils urbains. Ces deux catégories devraient concentrer l'essentiel des investissements marketing.")
 
-        v3, v4 = st.columns(2)
-        with v3:
-            section("Distribution des prix — VN vs VO")
-            fig = px.histogram(dff, x="PRIX_VENTE_TTC_COM", nbins=32,
-                               color="VEHICULE_TYPE",
-                               color_discrete_map={"VN": PRIMARY, "VO": "#FBBF24"},
-                               barmode="overlay", opacity=0.8,
-                               labels={"PRIX_VENTE_TTC_COM": "Prix (€)", "VEHICULE_TYPE": "Type"})
-            st.plotly_chart(chart_defaults(fig), use_container_width=True)
-            insight("Les <strong>VN</strong> se concentrent entre 20 000 et 35 000 €. Les <strong>VO</strong> sont plus dispersés avec un pic à 15 000 €. Prix moyen global : <strong>21 724 €</strong>.")
-
-        with v4:
-            section("Énergie × Catégorie — Heatmap")
-            heat = dff.groupby(["VEHICULE_ENERGIE", "VEHICULE_CATEGORIE"]).size().unstack(fill_value=0)
-            fig = px.imshow(heat, color_continuous_scale=["white", ACCENT, PRIMARY],
-                            aspect="auto", labels={"color": "Ventes"})
-            fig.update_layout(xaxis_tickangle=-30)
-            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
-            insight("Les <strong>SUV Essence</strong> dominent massivement. L'<strong>Hybride est quasi-exclusivement associé aux SUV</strong>. Le Diesel reste bien représenté sur Breaks et Berlines — segments en déclin à surveiller.")
-
-        v5, v6 = st.columns(2)
-        with v5:
-            section("Prix moyen par marque (Top 15)")
-            prix_marque = dff.groupby("VEHICULE_MARQUE")["PRIX_VENTE_TTC_COM"].mean().nlargest(15).reset_index()
-            prix_marque.columns = ["Marque", "Prix moyen"]
-            fig = px.bar(prix_marque, x="Prix moyen", y="Marque", orientation="h",
-                         color="Prix moyen", color_continuous_scale=["#FEF9C3", WARNING])
-            fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
-            st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
-            insight("<strong>Tesla, BMW et Mercedes</strong> affichent les prix moyens les plus élevés. Les marques françaises se positionnent sur le segment médian (18 000–25 000 €), cœur de marché d'Aramisauto.")
-
-        with v6:
-            section("Kilométrage vs Prix")
-            fig = px.scatter(dff[dff["VEHICULE_KM"] < 160000],
-                             x="VEHICULE_KM", y="PRIX_VENTE_TTC_COM",
-                             color="VEHICULE_ENERGIE", opacity=0.4,
-                             color_discrete_sequence=CHART_COLORS,
-                             labels={"VEHICULE_KM": "Kilométrage", "PRIX_VENTE_TTC_COM": "Prix (€)"},
-                             hover_data=["VEHICULE_MODELE", "VEHICULE_MARQUE"])
-            fig.update_traces(marker=dict(size=5))
-            st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
-            insight("Corrélation négative attendue entre kilométrage et prix. Les <strong>Électriques et Hybrides</strong> maintiennent un prix élevé même à faible kilométrage — forte valeur résiduelle à mettre en avant.")
-
-        section("Prix par boîte de vitesse et catégorie de véhicule")
-        fig = px.box(dff, x="VEHICULE_BOITE_VITESSE", y="PRIX_VENTE_TTC_COM",
-                     color="VEHICULE_CATEGORIE",
-                     color_discrete_sequence=CHART_COLORS,
-                     labels={"VEHICULE_BOITE_VITESSE": "Boîte", "PRIX_VENTE_TTC_COM": "Prix (€)"},
-                     points=False)
-        st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
-        insight("La <strong>boîte automatique</strong> est systématiquement associée à des prix plus élevés, toutes catégories confondues. Les SUV automatiques affichent la médiane la plus haute (~27 000 €).")
+        # ── Ligne 3 : Distribution prix pleine largeur ──
+        section("Distribution des prix — VN vs VO")
+        fig = px.histogram(dff, x="PRIX_VENTE_TTC_COM", nbins=32,
+                           color="VEHICULE_TYPE",
+                           color_discrete_map={"VN": PRIMARY, "VO": "#FBBF24"},
+                           barmode="overlay", opacity=0.8,
+                           histnorm="percent",
+                           labels={"PRIX_VENTE_TTC_COM": "Prix (€)", "VEHICULE_TYPE": "Type"})
+        fig.update_layout(yaxis_title="Part (%)")
+        st.plotly_chart(chart_defaults(fig), use_container_width=True)
+        insight("Les <strong>VN</strong> se concentrent entre 20 000 et 35 000 €. Les <strong>VO</strong> sont plus dispersés avec un pic à 15 000 €. Prix moyen global : <strong>21 724 €</strong>.")
 
 
 # ════════════════════════════════════════
