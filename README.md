@@ -25,10 +25,12 @@ Dans analyse exploratoire
 - Changer le graphique sur les carburants
 - Rajouter des bulles statistiques pour que ça saute au yeux
 
-Pour la partie client on veut les graphiques suivant :
-Le type de véhcule par tranche d'age.
-Le sexe le plus représenté.
-Le type de financement par tranche d'age.
+Pour la partie client on veut les graphiques suivant : [RESTE 2 GRAPHIQUES A FAIRE]
+- Le type de véhcule par tranche d'age.
+- Le sexe le plus représenté. [FAIT]
+- Le type de financement par tranche d'age.
+- Mode de livraison [FAIT]
+- Top 20 des villes [FAIT]
 
 Pour la partie véhicule on veut les graphiques suivant :
 - Les 10 équipements les plus demandés. (On garde) et à vérifier
