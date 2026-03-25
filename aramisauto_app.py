@@ -264,15 +264,26 @@ with tab1:
         </div>
     </div>""", unsafe_allow_html=True)
 
-    k1, k2, k3, k4, k5 = st.columns(5)
+    # Calcul des KPI
+    nb_marques = df['VEHICULE_MARQUE'].nunique()
+    pct_suv = (df["VEHICULE_CATEGORIE"] == "4x4 et SUV").mean() * 100
+    pct_hommes = df['GENDER_LABEL'].value_counts(normalize=True).get('Homme', 0) * 100
+    prix_moyen = int(df['PRIX_VENTE_TTC_COM'].mean())
+    age_moyen = int(df['AGE'].mean())
+
+    # Liste des KPI à afficher
     kpis = [
         (f"{len(df):,}", "Transactions"),
-        (f"{df['VEHICULE_MARQUE'].nunique()}", "Marques"),
-        (f"{df['VEHICULE_MODELE'].nunique()}", "Modèles"),
-        (f"{int(df['PRIX_VENTE_TTC_COM'].mean()):,} €", "Prix de vente moyen"),
-        (f"{int(df['AGE'].mean())} ans", "Âge moyen"),
+        (f"{nb_marques}", "Marques"),
+        (f"{pct_suv:.0f}%", "Part SUV"),
+        (f"{prix_moyen:,} €", "Prix moyen"),
+        (f"{age_moyen} ans", "Âge moyen"),
+        (f"{pct_hommes:.0f}%", "Clients hommes"),
     ]
-    for col, (val, label) in zip([k1, k2, k3, k4, k5], kpis):
+
+    # Création des colonnes pour les KPI
+    k1, k2, k3, k4, k5, k6 = st.columns(6)
+    for col, (val, label) in zip([k1, k2, k3, k4, k5, k6], kpis):
         with col:
             st.markdown(f"""
             <div class="kpi-card">
@@ -280,44 +291,40 @@ with tab1:
                 <div class="kpi-label">{label}</div>
             </div>""", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-    
-    section("Objectifs du projet")
+    section("🎯 Objectifs marketing")
+
     st.markdown("""
-                Ce dashboard est destiné aux équipes **marketing d'Aramisauto** pour :
+    Ce dashboard permet de :
 
-                - **Analyser** les profils socio-démographiques et les préférences véhicules des clients
-                - **Segmenter** la base clients en groupes homogènes pour des campagnes ciblées
-                - **Recommander** des véhicules adaptés à chaque profil prospect
-                - **Piloter** les stratégies d'acquisition et de rétention
-                """)
+    - **Comprendre les clients** : profils, comportements d'achat, préférences véhicules  
+    - **Identifier des segments à forte valeur** pour optimiser le ciblage  
+    - **Personnaliser les campagnes marketing** (offres, messages, canaux)  
+    - **Optimiser les investissements marketing** en se concentrant sur les segments rentables  
+    - **Adapter la stratégie produit** selon la demande (SUV, hybride, etc.)
+    """)
     
-    insight("L'<strong>Essence domine</strong> avec ~56 % des ventes, " \
-    "suivie de l'Hybride (20 %) et du Diesel (19 %). " \
-    "L'Électrique reste marginal (~4 %) mais représente un segment à fort potentiel de croissance.", title="💡 À retenir")
-    
-    section("Variables clés du dataset")
-    schema = pd.DataFrame({
-        "Variable": [
-            "AGE / GENDER", "PRIX_VENTE_TTC_COM", "VEHICULE_MARQUE / MODELE",
-            "VEHICULE_ENERGIE", "VEHICULE_CATEGORIE", "VEHICULE_KM",
-            "TYPE_LIVRAISON_COM", "FI_TYPE", "NEAREST_AGENCY_DISTANCE"
-            ],
+    st.info("👉 Utilisez les onglets ci-dessus pour analyser les comportements, explorer les segments clients et activer des recommandations personnalisées.")
 
-        "Description": [
-            "Profil démographique du client",
-            "Prix de vente TTC (€)",
-            "Marque et modèle achetés",
-            "Essence · Diesel · Hybride · Électrique",
-            "SUV · Citadine · Berline · Break…",
-            "Kilométrage au compteur",
-            "En agence ou livraison à domicile",
-            "Mode de financement (Crédit, LOA)",
-            "Distance client → agence la plus proche (km)"
-            ]})
     
-    st.dataframe(schema, hide_index=True, use_container_width=True)
+    section("📌 Synthèse des insights clés")
+    insight("""
+    - Les **SUV représentent +50 % des ventes** → segment prioritaire
+    - La clientèle est **majoritairement masculine (66 %)** → potentiel féminin sous-exploité
+    - Les **36–55 ans = cœur de cible** → campagnes à optimiser sur ce segment
+    - L’**électrique reste faible (~4 %)** → opportunité de croissance stratégique
+    """, title="📊 Synthèse rapide pour décision marketing")
 
+
+    section("❓ Questions auxquelles répond ce dashboard")
+    st.markdown("""
+    - Qui sont les clients d’Aramisauto ?
+    - Quels segments génèrent le plus de valeur ?
+    - Quels véhicules sont les plus demandés ?
+    - Quels profils cibler pour augmenter les ventes ?
+    - Comment personnaliser les campagnes marketing ?
+    """)
+
+    section("📊 Données utilisées")
     with st.expander("🔍 Aperçu des données brutes"):
         st.dataframe(df.head(20), use_container_width=True)
 
