@@ -5,12 +5,12 @@ Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
 - Répartition géographique (carte interactive). st.map pour la répartition géographique
 ## Chose à modifier
 
-Dans les bulles à retenir
+Dans les bulles à retenir [TERMINE]
 - Corriger l'affichage [FAIT]
 
-Dans la zone des filtres
-- Ajouter un bouton reset rapide
-- Rajouter le filtre type de livraiso ? Pertinent ou pas [A REFLECHIR]
+Dans la zone des filtres [TERMINE]
+- Ajouter un bouton reset rapide [FAIT]
+- Rajouter le filtre type de livraiso ? Pertinent ou pas [FAIT]
 
 Dans la page de présentation [TERMINE]
 - Pas de camembert / pas de graphique [FAIT]
