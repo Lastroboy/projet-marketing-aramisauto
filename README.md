@@ -12,11 +12,11 @@ Dans la zone des filtres
 - Ajouter un bouton reset rapide
 - Rajouter le filtre type de livraiso ? Pertinent ou pas [A REFLECHIR]
 
-Dans la page de présentation
+Dans la page de présentation [TERMINE]
 - Pas de camembert / pas de graphique [FAIT]
-- On enlève la bulle à retenir [A REFLECHIR]
+- On enlève la bulle à retenir [FAIT]
 - Changer l'age moyen du véhicule et la calculer en fonction de la date d'achat [FAIT]
-- On enlève le tableau des noms de variables [A REFLECHIR]
+- On enlève le tableau des noms de variables [FAIT]
 - On enlèe le tableau pipeline blabla [FAIT]
 
 Dans analyse exploratoire
