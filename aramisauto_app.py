@@ -215,29 +215,54 @@ df = load_data()
 # ─────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────
+
+# Valeurs par défaut
+DEFAULTS = {
+    "gender_filter":   ["Homme", "Femme"],
+    "age_range":       (18, 90),
+    "prix_range":      (int(df["PRIX_VENTE_TTC_COM"].min()), int(df["PRIX_VENTE_TTC_COM"].max())),
+    "energie_filter":  sorted(df["VEHICULE_ENERGIE"].unique().tolist()),
+    "type_vehicule":   ["VN", "VO"],
+    "livraison_filter": df["TYPE_LIVRAISON_COM"].unique().tolist(),
+}
+
+# Initialisation session_state
+for key, val in DEFAULTS.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
+
 with st.sidebar:
     st.markdown("### Filtres")
     st.caption("Appliqués aux onglets Analyse & Clustering")
     st.markdown("")
-    gender_filter  = st.multiselect("Genre", ["Homme", "Femme"], default=["Homme", "Femme"])
-    age_range      = st.slider("Âge", 18, 90, (18, 90))
-    prix_range     = st.slider("Prix (€)",
-                               int(df["PRIX_VENTE_TTC_COM"].min()), int(df["PRIX_VENTE_TTC_COM"].max()),
-                               (int(df["PRIX_VENTE_TTC_COM"].min()), int(df["PRIX_VENTE_TTC_COM"].max())))
-    energie_filter = st.multiselect("Énergie", sorted(df["VEHICULE_ENERGIE"].unique().tolist()),
-                                    default=df["VEHICULE_ENERGIE"].unique().tolist())
-    type_vehicule  = st.multiselect("Type", ["VN", "VO"], default=["VN", "VO"])
+
+    gender_filter = st.multiselect("Genre", ["Homme", "Femme"], key="gender_filter")
+    age_range = st.slider("Âge", 18, 90, key="age_range")
+    prix_range = st.slider("Prix (€)", int(df["PRIX_VENTE_TTC_COM"].min()), int(df["PRIX_VENTE_TTC_COM"].max()), key="prix_range")
+    energie_filter = st.multiselect("Énergie", sorted(df["VEHICULE_ENERGIE"].unique()), key="energie_filter")
+    type_vehicule = st.multiselect("Type véhicule", ["VN", "VO"], key="type_vehicule")
+    livraison_filter = st.multiselect("Type de livraison", df["TYPE_LIVRAISON_COM"].unique().tolist(), key="livraison_filter")
+
+    st.markdown("")
+    if st.button("🔄 Réinitialiser les filtres", use_container_width=True):
+        for key in DEFAULTS.keys():
+            if key in st.session_state:
+                del st.session_state[key]
+        st.rerun()
+
     st.markdown("---")
     st.caption(f"📁 df_master.csv  ·  **{len(df):,}** lignes")
 
 mask = (
-    df["GENDER_LABEL"].isin(gender_filter) &
-    df["AGE"].between(age_range[0], age_range[1]) &
-    df["PRIX_VENTE_TTC_COM"].between(prix_range[0], prix_range[1]) &
-    df["VEHICULE_ENERGIE"].isin(energie_filter) &
-    df["VEHICULE_TYPE"].isin(type_vehicule)
+    df["GENDER_LABEL"].isin(st.session_state["gender_filter"]) &
+    df["AGE"].between(st.session_state["age_range"][0], st.session_state["age_range"][1]) &
+    df["PRIX_VENTE_TTC_COM"].between(st.session_state["prix_range"][0], st.session_state["prix_range"][1]) &
+    df["VEHICULE_ENERGIE"].isin(st.session_state["energie_filter"]) &
+    df["VEHICULE_TYPE"].isin(st.session_state["type_vehicule"]) &
+    df["TYPE_LIVRAISON_COM"].isin(st.session_state["livraison_filter"])
 )
 dff = df[mask].copy()
+
 
 
 # ─────────────────────────────────────────
