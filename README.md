@@ -19,24 +19,24 @@ Dans la page de présentation [TERMINE]
 - On enlève le tableau des noms de variables [FAIT]
 - On enlèe le tableau pipeline blabla [FAIT]
 
-Dans analyse exploratoire
-- Changer tous les graphiques
+Dans analyse exploratoire [A CONFIRMER]
+- Changer tous les graphiques [FAIT]
 - Supprimer la heatmap [FAIT]
 - Changer le graphique sur les carburants [FAIT]
-- Rajouter des bulles statistiques pour que ça saute au yeux
+- Rajouter des bulles statistiques pour que ça saute au yeux [A CONFIRMER]
 
 Pour la partie client on veut les graphiques suivant : [A CONFIRMER]
-- Le type de véhcule par tranche d'age. [A CONFIRMER]
+- Le type de véhcule par tranche d'age. [FAIT]
 - Le sexe le plus représenté. [FAIT]
 - Le type de financement par tranche d'age. [FAIT]
 - Mode de livraison [FAIT]
 - Top 20 des villes [FAIT]
 
-Pour la partie véhicule on veut les graphiques suivant :
+Pour la partie véhicule on veut les graphiques suivant : [A CONFIRMER UN GRAPHIQUE]
 - Les 10 équipements les plus demandés. (On garde) et à vérifier [FAIT]
-- Le carburant le plus demandé (On vérifie) [METTRE ORDONNEES EN POURCENTAGE]
+- Le carburant le plus demandé (On vérifie) [FAIT]
 - Top 15 marques vendues [FAIT]
-- Les catégories de véhicules (bar plot) [METTRE ORDONNEES EN POURCENTAGE]
+- Les catégories de véhicules (bar plot) [FAIT]
 - Distributions du prix selon les véhicules neuf et d'occasion (ON GARDE) juste modification de l'ordonnée en pourcentage [FAIT]
 
 Dans Clustering Clients
