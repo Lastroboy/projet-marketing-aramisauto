@@ -21,23 +21,23 @@ Dans la page de présentation [TERMINE]
 
 Dans analyse exploratoire
 - Changer tous les graphiques
-- Supprimer la heatmap
-- Changer le graphique sur les carburants
+- Supprimer la heatmap [FAIT]
+- Changer le graphique sur les carburants [FAIT]
 - Rajouter des bulles statistiques pour que ça saute au yeux
 
-Pour la partie client on veut les graphiques suivant : [RESTE 2 GRAPHIQUES A FAIRE]
-- Le type de véhcule par tranche d'age.
+Pour la partie client on veut les graphiques suivant : [A CONFIRMER]
+- Le type de véhcule par tranche d'age. [A CONFIRMER]
 - Le sexe le plus représenté. [FAIT]
-- Le type de financement par tranche d'age.
+- Le type de financement par tranche d'age. [FAIT]
 - Mode de livraison [FAIT]
 - Top 20 des villes [FAIT]
 
 Pour la partie véhicule on veut les graphiques suivant :
-- Les 10 équipements les plus demandés. (On garde) et à vérifier
-- Le carburant le plus demandé (On vérifie)
-- Top 15 marques vendues
-- Les catégories de véhicules (bar plot)
-- Distributions du prix selon les véhicules neuf et d'occasion (ON GARDE) juste modification de l'ordonnée en pourcentage
+- Les 10 équipements les plus demandés. (On garde) et à vérifier [FAIT]
+- Le carburant le plus demandé (On vérifie) [METTRE ORDONNEES EN POURCENTAGE]
+- Top 15 marques vendues [FAIT]
+- Les catégories de véhicules (bar plot) [METTRE ORDONNEES EN POURCENTAGE]
+- Distributions du prix selon les véhicules neuf et d'occasion (ON GARDE) juste modification de l'ordonnée en pourcentage [FAIT]
 
 Dans Clustering Clients
 - Rajouter un pragraphe sur nos 3 hypothèses
