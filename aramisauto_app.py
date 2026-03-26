@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import silhouette_score
+import json
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -424,38 +425,46 @@ with tab2:
                     "<extra></extra>"
                 )
             )
+
             fig.update_layout(
                 showlegend=True,
                 legend=dict(title="Genre", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
+
             st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
             insight("Le ratio <strong>Homme / Femme est de 66 % / 34 %</strong>. Fort potentiel d'acquisition sur la cible féminine, encore sous-représentée dans le portefeuille client.")
 
         c3, c4 = st.columns(2)
         with c3:
-            section("Achats par tranche d'âge")
-            age_data = dff.groupby("TRANCHE_AGE", observed=True).size().reset_index(name="Nb")
-            fig = px.bar(age_data, x="TRANCHE_AGE", y="Nb",
-                         color="Nb", color_continuous_scale=["#DBEAFE", PRIMARY],
-                         labels={"TRANCHE_AGE": "Tranche d'âge", "Nb": "Transactions"})
-            fig.update_layout(coloraxis_showscale=False)
+            section("Type de financement par tranche d'âge")
+            tranche_order = ["18–25","26–35","36–45","46–55","56–65","65+"]
+            fi_age = dff.copy()
+
+            fi_age["FI_TYPE"] = fi_age["FI_TYPE"].fillna("Cash") # ON EST SUR DE L'INFO ???
+            fi_age = fi_age.groupby(["TRANCHE_AGE", "FI_TYPE"], observed=True).size().reset_index(name="Nb")
+            total_fi = fi_age.groupby("TRANCHE_AGE", observed=True)["Nb"].transform("sum")
+            fi_age["Pct"] = (fi_age["Nb"] / total_fi * 100).round(1)
+
+            fig = px.bar(
+                fi_age, x="TRANCHE_AGE", y="Pct",
+                color="FI_TYPE",
+                barmode="stack",
+                color_discrete_sequence=[PRIMARY, ACCENT, "#34D399", "#FBBF24"],
+                labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part des clients (%)", "FI_TYPE": "Financement"},
+                category_orders={"TRANCHE_AGE": tranche_order},
+                custom_data=["Nb", "FI_TYPE"],
+            )
+
+            fig.update_traces(
+                hovertemplate="<b>%{customdata[1]}</b><br>Part des clients : <b>%{y:.1f}%</b><br>Nb : <b>%{customdata[0]:,}</b><extra></extra>"
+            )
+
+            fig.update_layout(yaxis_title="Part des clients (%)", legend_title="Financement")
+
             st.plotly_chart(chart_defaults(fig), use_container_width=True)
-            insight("GRAPHIQUE A REMPLACER OU SUPPRIMER ICI")
 
-        with c4:
-            section("Mode de financement")
-            fi_data = dff["FI_TYPE"].dropna().value_counts().reset_index()
-            fi_data.columns = ["Financement", "Nb"]
-            fig = px.bar(fi_data, x="Financement", y="Nb",
-                         color="Financement",
-                         color_discrete_sequence=[PRIMARY, ACCENT, "#34D399"],
-                         labels={"Nb": "Transactions"})
-            fig.update_layout(showlegend=False)
-
-            st.plotly_chart(chart_defaults(fig), use_container_width=True)
-            
-            insight("Parmi les clients ayant renseigné un financement, le <strong>Crédit</strong> est légèrement préféré à la <strong>LOA</strong>. Note : 61 % des transactions n'ont pas de financement renseigné.")
-
+            insight("Le <strong>Cash</strong> est le mode de règlement dominant toutes tranches confondues. Le <strong>Crédit</strong> et la <strong>LOA</strong> sont plus présents chez les 26–55 ans. Note : 61 % des transactions n'ont pas de financement renseigné.")
+        
         c5, c6 = st.columns(2)
         with c5:
             section("Mode de livraison")
@@ -488,12 +497,28 @@ with tab2:
             insight("<strong>78% des clients</strong> choisissent le retrait en agence. La livraison à domicile (22 %) est un canal en croissance à valoriser dans les communications marketing.")
 
         with c6:
-            section("Distance à l'agence la plus proche (km)")
-            fig = px.histogram(dff, x="NEAREST_AGENCY_DISTANCE", nbins=30,
-                               color_discrete_sequence=[ACCENT],
-                               labels={"NEAREST_AGENCY_DISTANCE": "Distance (km)"})
+            section("Type de véhicule par tranche d'âge")
+            tranche_order = ["18–25","26–35","36–45","46–55","56–65","65+"]
+            veh_age = dff.copy()
+            veh_age["TYPE_LABEL"] = veh_age["VEHICULE_TYPE"].map({"VN": "Véhicule neuf", "VO": "Véhicule d'occasion"})
+            veh_age = veh_age.groupby(["TRANCHE_AGE", "TYPE_LABEL"], observed=True).size().reset_index(name="Nb")
+            total_age = veh_age.groupby("TRANCHE_AGE", observed=True)["Nb"].transform("sum")
+            veh_age["Pct"] = (veh_age["Nb"] / total_age * 100).round(1)
+            fig = px.bar(
+                veh_age, x="TRANCHE_AGE", y="Pct",
+                color="TYPE_LABEL",
+                barmode="stack",
+                color_discrete_map={"Véhicule neuf": PRIMARY, "Véhicule d'occasion": "#34D399"},
+                labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)", "TYPE_LABEL": "Type"},
+                category_orders={"TRANCHE_AGE": tranche_order},
+                custom_data=["Nb", "TYPE_LABEL"],
+            )
+            fig.update_traces(
+                hovertemplate="<b>%{customdata[1]}</b><br>Part des clients : <b>%{y:.1f}%</b><br>Nb de clients : <b>%{customdata[0]:,}</b><extra></extra>"
+            )
+            fig.update_layout(yaxis_title="Part des clients (%)", legend_title="Type")
             st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
-            insight("La majorité des clients habitent à <strong>moins de 50 km</strong> d'une agence. La clientèle est fortement concentrée en zones urbaines denses — à prioriser dans le déploiement des agences.")
+            insight("Les clients <strong>jeunes (18–35 ans)</strong> s'orientent davantage vers l'<strong>occasion</strong>, tandis que les tranches 46+ achètent proportionnellement plus de véhicules <strong>neufs</strong>.")
 
         section("Top 20 villes")
         dff_villes = dff[~dff['VILLE'].isin([np.nan, "x", "X", "NON REPONSE"])]
@@ -576,6 +601,15 @@ with tab2:
             st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
             insight("Les <strong>SUV & 4x4</strong> représentent 54 % des ventes. Les Citadines arrivent 2ème (24 %), prisées par les profils urbains. Ces deux catégories devraient concentrer l'essentiel des investissements marketing.")
 
+        section("Prix moyen par marque (Top 15)")
+        prix_marque = dff.groupby("VEHICULE_MARQUE")["PRIX_VENTE_TTC_COM"].mean().nlargest(15).reset_index()
+        prix_marque.columns = ["Marque", "Prix moyen"]
+        fig = px.bar(prix_marque, x="Prix moyen", y="Marque", orientation="h",
+                         color="Prix moyen", color_continuous_scale=["#FEF9C3", WARNING])
+        fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
+        st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
+        insight("<strong>Tesla, BMW et Mercedes</strong> affichent les prix moyens les plus élevés. Les marques françaises se positionnent sur le segment médian (18 000–25 000 €), cœur de marché d'Aramisauto.")
+        
         # ── Ligne 3 : Distribution prix pleine largeur ──
         section("Distribution des prix — VN vs VO")
         fig = px.histogram(dff, x="PRIX_VENTE_TTC_COM", nbins=32,
@@ -587,6 +621,15 @@ with tab2:
         fig.update_layout(yaxis_title="Part (%)")
         st.plotly_chart(chart_defaults(fig), use_container_width=True)
         insight("Les <strong>VN</strong> se concentrent entre 20 000 et 35 000 €. Les <strong>VO</strong> sont plus dispersés avec un pic à 15 000 €. Prix moyen global : <strong>21 724 €</strong>.")
+
+        section("Prix par boîte de vitesse et catégorie de véhicule")
+        fig = px.box(dff, x="VEHICULE_BOITE_VITESSE", y="PRIX_VENTE_TTC_COM",
+                     color="VEHICULE_CATEGORIE",
+                     color_discrete_sequence=CHART_COLORS,
+                     labels={"VEHICULE_BOITE_VITESSE": "Boîte", "PRIX_VENTE_TTC_COM": "Prix (€)"},
+                     points=False)
+        st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
+        insight("La <strong>boîte automatique</strong> est systématiquement associée à des prix plus élevés, toutes catégories confondues. Les SUV automatiques affichent la médiane la plus haute (~27 000 €).")
 
 
 # ════════════════════════════════════════
