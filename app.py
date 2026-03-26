@@ -636,7 +636,7 @@ with tab2:
                 hovertemplate="<br>Catégorie : <b>%{x}</b><br>Part des véhicules : <b>%{y}%</b><extra></extra>"
                 )
             
-            fig.update_layout(yaxis_title="Catégories", xaxis_title="Part des véhicules (%)", showlegend=False, xaxis_tickangle=-25)
+            fig.update_layout(yaxis_title="Part des véhicules (%)", xaxis_title="Catégories", showlegend=False, xaxis_tickangle=-25)
 
             st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
             insight("Les <strong>SUV & 4x4</strong> représentent 54 % des ventes. Les Citadines arrivent 2ème (24 %), prisées par les profils urbains. Ces deux catégories devraient concentrer l'essentiel des investissements marketing.")
@@ -644,6 +644,7 @@ with tab2:
         section("Prix moyen par marque (Top 15)")
         prix_marque = dff.groupby("VEHICULE_MARQUE")["PRIX_VENTE_TTC_COM"].mean().nlargest(15).reset_index()
         prix_marque.columns = ["Marque", "Prix moyen"]
+        
         fig = px.bar(prix_marque, x="Prix moyen", y="Marque", orientation="h",
                          color="Prix moyen", color_continuous_scale=["#FEF9C3", WARNING])
         fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
