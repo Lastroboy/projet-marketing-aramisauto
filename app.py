@@ -465,6 +465,35 @@ with tab2:
 
             insight("Le <strong>Cash</strong> est le mode de règlement dominant toutes tranches confondues. Le <strong>Crédit</strong> et la <strong>LOA</strong> sont plus présents chez les 26–55 ans. Note : 61 % des transactions n'ont pas de financement renseigné.")
         
+        with c4:
+            section("Type de véhicule par tranche d'âge")
+            tranche_order = ["18–25","26–35","36–45","46–55","56–65","65+"]
+            veh_age = dff.copy()
+
+            veh_age["TYPE_LABEL"] = veh_age["VEHICULE_TYPE"].map({"VN": "Véhicule neuf", "VO": "Véhicule d'occasion"})
+            veh_age = veh_age.groupby(["TRANCHE_AGE", "TYPE_LABEL"], observed=True).size().reset_index(name="Nb")
+            total_age = veh_age.groupby("TRANCHE_AGE", observed=True)["Nb"].transform("sum")
+            veh_age["Pct"] = (veh_age["Nb"] / total_age * 100).round(1)
+            
+            fig = px.bar(
+                veh_age, x="TRANCHE_AGE", y="Pct",
+                color="TYPE_LABEL",
+                barmode="stack",
+                color_discrete_map={"Véhicule neuf": PRIMARY, "Véhicule d'occasion": "#34D399"},
+                labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)", "TYPE_LABEL": "Type"},
+                category_orders={"TRANCHE_AGE": tranche_order},
+                custom_data=["Nb", "TYPE_LABEL"],
+            )
+
+            fig.update_traces(
+                hovertemplate="<b>%{customdata[1]}</b><br>Part des clients : <b>%{y:.1f}%</b><br>Nb de clients : <b>%{customdata[0]:,}</b><extra></extra>"
+                )
+            
+            fig.update_layout(yaxis_title="Part des clients (%)", legend_title="Type")
+            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
+            insight("Les clients <strong>jeunes (18–35 ans)</strong> s'orientent davantage vers l'<strong>occasion</strong>, tandis que les tranches 46+ achètent proportionnellement plus de véhicules <strong>neufs</strong>.")
+
+
         c5, c6 = st.columns(2)
         with c5:
             section("Mode de livraison")
@@ -496,30 +525,6 @@ with tab2:
             st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
             insight("<strong>78% des clients</strong> choisissent le retrait en agence. La livraison à domicile (22 %) est un canal en croissance à valoriser dans les communications marketing.")
 
-        with c6:
-            section("Type de véhicule par tranche d'âge")
-            tranche_order = ["18–25","26–35","36–45","46–55","56–65","65+"]
-            veh_age = dff.copy()
-            veh_age["TYPE_LABEL"] = veh_age["VEHICULE_TYPE"].map({"VN": "Véhicule neuf", "VO": "Véhicule d'occasion"})
-            veh_age = veh_age.groupby(["TRANCHE_AGE", "TYPE_LABEL"], observed=True).size().reset_index(name="Nb")
-            total_age = veh_age.groupby("TRANCHE_AGE", observed=True)["Nb"].transform("sum")
-            veh_age["Pct"] = (veh_age["Nb"] / total_age * 100).round(1)
-            fig = px.bar(
-                veh_age, x="TRANCHE_AGE", y="Pct",
-                color="TYPE_LABEL",
-                barmode="stack",
-                color_discrete_map={"Véhicule neuf": PRIMARY, "Véhicule d'occasion": "#34D399"},
-                labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)", "TYPE_LABEL": "Type"},
-                category_orders={"TRANCHE_AGE": tranche_order},
-                custom_data=["Nb", "TYPE_LABEL"],
-            )
-            fig.update_traces(
-                hovertemplate="<b>%{customdata[1]}</b><br>Part des clients : <b>%{y:.1f}%</b><br>Nb de clients : <b>%{customdata[0]:,}</b><extra></extra>"
-            )
-            fig.update_layout(yaxis_title="Part des clients (%)", legend_title="Type")
-            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
-            insight("Les clients <strong>jeunes (18–35 ans)</strong> s'orientent davantage vers l'<strong>occasion</strong>, tandis que les tranches 46+ achètent proportionnellement plus de véhicules <strong>neufs</strong>.")
-
         section("Top 20 villes")
         dff_villes = dff[~dff['VILLE'].isin([np.nan, "x", "X", "NON REPONSE"])]
         top_villes = dff_villes["VILLE"].value_counts().head(20).reset_index()
@@ -533,6 +538,7 @@ with tab2:
         fig = px.bar(top_villes, x="Pct", y="Ville", orientation="h",
                      color="Pct", color_continuous_scale=["#DBEAFE", PRIMARY],
                      labels={"Pct": "Part de transactions (%)", "Ville": "Ville"})
+        
         fig.update_traces(
                 hovertemplate=(
                     "Part de transactions (%) : <b>%{x}</b><br>"
@@ -551,30 +557,48 @@ with tab2:
         e1, e2 = st.columns(2)
         with e1:
             section("Top 10 équipements les plus demandés")
+
             def parse_equip(val):
                 try:
                     return [item["category"] for item in json.loads(val)]
                 except Exception:
                     return []
+                
             equip_series = dff["OFFER_EQUIPMENTS_MAIN_LIST"].dropna().apply(parse_equip)
             equip_df = equip_series.explode().value_counts().head(10).reset_index()
             equip_df.columns = ["Équipement", "Nb"]
+
             fig = px.bar(equip_df, x="Nb", y="Équipement", orientation="h",
                          color="Nb", color_continuous_scale=["#DBEAFE", PRIMARY],
                          labels={"Nb": "Nombre de véhicules", "Équipement": "Équipement"})
-            fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
+            
+            fig.update_traces(
+                hovertemplate="<br>Nb de véhicules : <b>%{x}</b><br>Equipement : <b>%{y}</b><extra></extra>"
+                )
+            
+            fig.update_layout(yaxis_title="Equipements", coloraxis_showscale=False, yaxis=dict(autorange="reversed"))         
+
             st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
             insight("La <strong>Climatisation</strong> et le <strong>Bluetooth</strong> sont les équipements les plus fréquents. Les équipements connectés (Apple CarPlay, Android Auto) gagnent en popularité — un argument marketing fort pour les cibles jeunes.")
 
         with e2:
-            section("Carburant le plus demandé")
+            section("Carburants les plus demandés")
             energie = dff["VEHICULE_ENERGIE"].value_counts().reset_index()
             energie.columns = ["Carburant", "Nb"]
-            fig = px.bar(energie, x="Carburant", y="Nb",
+
+            energie["Pct"] = (energie["Nb"] / energie["Nb"].sum() * 100).round(1)
+            energie["Pct_label"] = energie["Pct"].astype(str) + " %"
+
+            fig = px.bar(energie, x="Carburant", y="Pct",
                          color="Carburant",
                          color_discrete_sequence=CHART_COLORS,
-                         labels={"Nb": "Transactions", "Carburant": "Carburant"})
-            fig.update_layout(showlegend=False)
+                         labels={"Pct": "Part de véhicules (%)", "Carburant": "Carburant"})
+            
+            fig.update_traces(
+                hovertemplate="<br>Carburant : <b>%{x}</b><br>Part de véhicules : <b>%{y}%</b><extra></extra>"
+                )
+            
+            fig.update_layout(yaxis_title="Part des véhicules (%)", xaxis_title="Carburants", showlegend=False)
             st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
             insight("L'<strong>Essence</strong> domine largement (54 %), suivie de l'<strong>Hybride</strong> (19 %) et du <strong>Diesel</strong> (18 %). La part électrique reste faible (4 %) mais en croissance — à intégrer dans les communications.")
 
@@ -584,10 +608,16 @@ with tab2:
             section("Top 15 marques vendues")
             marques = dff["VEHICULE_MARQUE"].value_counts().head(15).reset_index()
             marques.columns = ["Marque", "Nb"]
+
             fig = px.bar(marques, x="Nb", y="Marque", orientation="h",
                          color="Nb", color_continuous_scale=["#DBEAFE", PRIMARY],
                          labels={"Nb": "Transactions"})
-            fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
+            
+            fig.update_traces(
+                hovertemplate="<br>Nb de transactions : <b>%{x}</b><br>Marque : <b>%{y}</b><extra></extra>"
+                )
+            
+            fig.update_layout(yaxis_title="Marques", xaxis_title="Nombre de transactions", coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
             st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
             insight("<strong>Peugeot, Citroën et Renault</strong> trustent le podium et représentent +63 % des ventes. Le catalogue est fortement ancré sur les marques françaises — un levier de partenariat commercial à exploiter.")
 
@@ -595,9 +625,19 @@ with tab2:
             section("Catégories de véhicules")
             cats = dff["VEHICULE_CATEGORIE"].value_counts().reset_index()
             cats.columns = ["Catégorie", "Nb"]
-            fig = px.bar(cats, x="Catégorie", y="Nb", color="Catégorie",
+
+            cats["Pct"] = (cats["Nb"] / cats["Nb"].sum() * 100).round(1)
+            cats["Pct_label"] = cats["Pct"].astype(str) + " %"
+
+            fig = px.bar(cats, x="Catégorie", y="Pct", color="Catégorie",
                          color_discrete_sequence=CHART_COLORS)
-            fig.update_layout(showlegend=False, xaxis_tickangle=-25)
+            
+            fig.update_traces(
+                hovertemplate="<br>Catégorie : <b>%{x}</b><br>Part des véhicules : <b>%{y}%</b><extra></extra>"
+                )
+            
+            fig.update_layout(yaxis_title="Catégories", xaxis_title="Part des véhicules (%)", showlegend=False, xaxis_tickangle=-25)
+
             st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
             insight("Les <strong>SUV & 4x4</strong> représentent 54 % des ventes. Les Citadines arrivent 2ème (24 %), prisées par les profils urbains. Ces deux catégories devraient concentrer l'essentiel des investissements marketing.")
 
@@ -618,7 +658,15 @@ with tab2:
                            barmode="overlay", opacity=0.8,
                            histnorm="percent",
                            labels={"PRIX_VENTE_TTC_COM": "Prix (€)", "VEHICULE_TYPE": "Type"})
-        fig.update_layout(yaxis_title="Part (%)")
+        
+        
+        fig.update_traces(
+            hovertemplate="<br>Type : <b>%{fullData.name}</b>"
+                        "<br>Prix (€) : <b>%{x}</b>"
+                        "<br>Part des transactions : <b>%{y:.2f}%</b>"
+                        "<extra></extra>")
+
+        fig.update_layout(yaxis_title="Part des transactions (%)")
         st.plotly_chart(chart_defaults(fig), use_container_width=True)
         insight("Les <strong>VN</strong> se concentrent entre 20 000 et 35 000 €. Les <strong>VO</strong> sont plus dispersés avec un pic à 15 000 €. Prix moyen global : <strong>21 724 €</strong>.")
 
