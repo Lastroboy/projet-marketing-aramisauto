@@ -359,6 +359,8 @@ with tab1:
 # ════════════════════════════════════════
 with tab2:
     st.caption(f"**{len(dff):,} transactions** correspondent aux filtres actifs · Modifiez-les dans la colonne de gauche.")
+    st.info("👉 Tous les graphiques sont interactifs : survolez-les pour afficher des informations détaillées.")
+
 
     sub_client, sub_vehicule = st.tabs(["👤  Profil Clients", "🚘  Profil Véhicules"])
 
@@ -440,7 +442,7 @@ with tab2:
             tranche_order = ["18–25","26–35","36–45","46–55","56–65","65+"]
             fi_age = dff.copy()
 
-            fi_age["FI_TYPE"] = fi_age["FI_TYPE"].fillna("Cash") # ON EST SUR DE L'INFO ???
+            fi_age["FI_TYPE"] = fi_age["FI_TYPE"].fillna("Cash")
             fi_age = fi_age.groupby(["TRANCHE_AGE", "FI_TYPE"], observed=True).size().reset_index(name="Nb")
             total_fi = fi_age.groupby("TRANCHE_AGE", observed=True)["Nb"].transform("sum")
             fi_age["Pct"] = (fi_age["Nb"] / total_fi * 100).round(1)
@@ -463,7 +465,7 @@ with tab2:
 
             st.plotly_chart(chart_defaults(fig), use_container_width=True)
 
-            insight("Le <strong>Cash</strong> est le mode de règlement dominant toutes tranches confondues. Le <strong>Crédit</strong> et la <strong>LOA</strong> sont plus présents chez les 26–55 ans. Note : 61 % des transactions n'ont pas de financement renseigné.")
+            insight("Le <strong>Cash</strong> est le mode de règlement dominant toutes tranches confondues. Le <strong>Crédit</strong> et la <strong>LOA</strong> sont plus présents chez les 26–55 ans.")
         
         with c4:
             section("Type de véhicule par tranche d'âge")
@@ -647,12 +649,18 @@ with tab2:
         
         fig = px.bar(prix_marque, x="Prix moyen", y="Marque", orientation="h",
                          color="Prix moyen", color_continuous_scale=["#FEF9C3", WARNING])
+        
+        fig.update_traces(
+            hovertemplate="<br>Prix moyen : <b>%{x}€</b>"
+                        "<br>Marque : <b>%{y}</b>"
+                        "<extra></extra>")
+        
         fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
         st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
         insight("<strong>Tesla, BMW et Mercedes</strong> affichent les prix moyens les plus élevés. Les marques françaises se positionnent sur le segment médian (18 000–25 000 €), cœur de marché d'Aramisauto.")
         
         # ── Ligne 3 : Distribution prix pleine largeur ──
-        section("Distribution des prix — VN vs VO")
+        section("Distribution des prix — Véhicules Neuf (VN) vs Véhicules d'Occasion (VO)")
         fig = px.histogram(dff, x="PRIX_VENTE_TTC_COM", nbins=32,
                            color="VEHICULE_TYPE",
                            color_discrete_map={"VN": PRIMARY, "VO": "#FBBF24"},
@@ -687,13 +695,14 @@ with tab2:
 with tab3:
     st.markdown("#### Segmentation non supervisée de la clientèle")
 
-    insight("<strong>Qu'est-ce que le clustering K-Means ?</strong><br> " \
-    "L'algorithme regroupe automatiquement les clients en <em>k</em> segments homogènes en minimisant la variance à l'intérieur de chaque groupe. " \
-    "Les variables utilisées sont : <strong>Âge, Prix d'achat, Kilométrage, Distance à l'agence, Genre, Énergie et Catégorie du véhicule</strong>. " \
-    "Toutes les variables sont normalisées pour éviter les biais d'échelle. "
-    "<br><br> " \
-    "Utilisez le curseur ci-dessous pour explorer différents nombres de segments et trouver la segmentation la plus utile pour le marketing.", 
-    title="ℹ️ Comment fonctionne cet onglet ?")
+    with st.expander("ℹ️ Comment fonctionne cet onglet ?", expanded=False):
+        insight("L'algorithme regroupe automatiquement les clients en <em>k</em> segments homogènes en minimisant la variance à l'intérieur de chaque groupe. " \
+        "Les variables utilisées sont : <strong>Âge, Prix d'achat, Kilométrage, Distance à l'agence, Genre, Énergie et Catégorie du véhicule</strong>. " \
+        "Toutes les variables sont normalisées pour éviter les biais d'échelle. "
+        "<br><br> " \
+        "Utilisez le curseur ci-dessous pour explorer différents nombres de segments et trouver la segmentation la plus utile pour le marketing.", 
+        title="Qu'est-ce que le clustering K-Means ?")
+    
 
     col_param, _ = st.columns([1, 3])
     with col_param:
