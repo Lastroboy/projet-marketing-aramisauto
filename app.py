@@ -429,7 +429,7 @@ with tab2:
             )
 
             fig.update_layout(
-                showlegend=True,
+                showlegend=False,
                 legend=dict(title="Genre", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
 
@@ -442,7 +442,7 @@ with tab2:
             tranche_order = ["18–25","26–35","36–45","46–55","56–65","65+"]
             fi_age = dff.copy()
 
-            fi_age["FI_TYPE"] = fi_age["FI_TYPE"].fillna("Cash")
+            fi_age["FI_TYPE"] = fi_age["FI_TYPE"].fillna("Comptant")
             fi_age = fi_age.groupby(["TRANCHE_AGE", "FI_TYPE"], observed=True).size().reset_index(name="Nb")
             total_fi = fi_age.groupby("TRANCHE_AGE", observed=True)["Nb"].transform("sum")
             fi_age["Pct"] = (fi_age["Nb"] / total_fi * 100).round(1)
@@ -496,23 +496,21 @@ with tab2:
             insight("Les clients <strong>jeunes (18–35 ans)</strong> s'orientent davantage vers l'<strong>occasion</strong>, tandis que les tranches 46+ achètent proportionnellement plus de véhicules <strong>neufs</strong>.")
 
 
-        c5, c6 = st.columns(2)
-        with c5:
-            section("Mode de livraison")
-            livr = dff["TYPE_LIVRAISON_COM"].value_counts().reset_index()
-            livr.columns = ["Mode", "Nb"]
+        section("Mode de livraison")
+        livr = dff["TYPE_LIVRAISON_COM"].value_counts().reset_index()
+        livr.columns = ["Mode", "Nb"]
 
-            livr["Pct"] = (livr["Nb"] / livr["Nb"].sum() * 100).round(1)
-            livr["Pct_label"] = livr["Pct"].astype(str) + " %"
+        livr["Pct"] = (livr["Nb"] / livr["Nb"].sum() * 100).round(1)
+        livr["Pct_label"] = livr["Pct"].astype(str) + " %"
 
-            fig = px.bar(livr, x="Mode", y="Pct",
-                         color="Mode",
-                         color_discrete_map={"En Agence": PRIMARY, "A Domicile": "#34D399"},
-                         text="Pct_label",
-                         labels={"Pct": "Part des clients (%)", "Mode": "Mode"},
-                custom_data=["Nb"])
+        fig = px.bar(livr, x="Mode", y="Pct",
+                    color="Mode",
+                    color_discrete_map={"En Agence": PRIMARY, "A Domicile": "#34D399"},
+                    text="Pct_label",
+                    labels={"Pct": "Part des clients (%)", "Mode": "Mode"},
+                    custom_data=["Nb"])
             
-            fig.update_traces(
+        fig.update_traces(
                 textposition="inside",
                 insidetextanchor="middle",
                 textfont=dict(size=14, color="white", family="Inter"),
@@ -521,11 +519,12 @@ with tab2:
                     "Nombre de clients : <b>%{customdata[0]:,}</b><br>"
                     "Part du total : <b>%{y} %</b>"
                     "<extra></extra>"
-                )
             )
+        )
 
-            st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
-            insight("<strong>78% des clients</strong> choisissent le retrait en agence. La livraison à domicile (22 %) est un canal en croissance à valoriser dans les communications marketing.")
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
+        insight("<strong>78% des clients</strong> choisissent le retrait en agence. La livraison à domicile (22 %) est un canal en croissance à valoriser dans les communications marketing.")
 
         section("Top 20 villes")
         dff_villes = dff[~dff['VILLE'].isin([np.nan, "x", "X", "NON REPONSE"])]
@@ -543,7 +542,7 @@ with tab2:
         
         fig.update_traces(
                 hovertemplate=(
-                    "Part de transactions (%) : <b>%{x}</b><br>"
+                    "Part de transactions : <b>%{x:.2f}%</b><br>"
                     "Ville : <b>%{y}</b>"
                     "<extra></extra>"
                 )
