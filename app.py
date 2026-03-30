@@ -12,6 +12,8 @@ from sklearn.metrics import silhouette_score
 import json
 import warnings
 warnings.filterwarnings("ignore")
+import prince
+from scipy import stats
 
 # ─────────────────────────────────────────
 # CONFIG
@@ -271,7 +273,7 @@ dff = df[mask].copy()
 tab1, tab2, tab3, tab4 = st.tabs([
     "🏠  Présentation",
     "📊  Analyse Exploratoire",
-    "🔵  Clustering Clients",
+    "🔬  Analyse & Hypothèses",
     "🎯  Recommandation",
 ])
 
@@ -400,7 +402,7 @@ with tab2:
 
             st.plotly_chart(chart_defaults(fig, h=320), use_container_width=True)
 
-            insight("La clientèle est majoritairement <strong>masculine (66 %)</strong>. Les tranches <strong>36–45 ans</strong> et <strong>46–55 ans</strong> concentrent le plus de transactions. Les <strong>65+</strong> représentent un segment fidèle à ne pas négliger dans les campagnes de fidélisation.")
+            insight("La clientèle est majoritairement <strong>masculine (66 %)</strong>. Les tranches <strong>35–44 ans</strong> et <strong>45–54 ans</strong> concentrent beaucoup de transactions. Les <strong>65+</strong> représentent le segment le plus fidèle à ne pas négliger dans les campagnes de fidélisation.")
 
         with c2:
             section("Répartition par genre")
@@ -465,7 +467,7 @@ with tab2:
 
             st.plotly_chart(chart_defaults(fig), use_container_width=True)
 
-            insight("Le <strong>Cash</strong> est le mode de règlement dominant toutes tranches confondues. Le <strong>Crédit</strong> et la <strong>LOA</strong> sont plus présents chez les 26–55 ans.")
+            insight("Le <strong>Paiement au comptant</strong> est le mode de règlement dominant toutes tranches confondues. Le <strong>Crédit</strong> et la <strong>LOA</strong> sont plus présents chez les 18-25 ans.")
         
         with c4:
             section("Type de véhicule par tranche d'âge")
@@ -580,7 +582,7 @@ with tab2:
             fig.update_layout(yaxis_title="Equipements", coloraxis_showscale=False, yaxis=dict(autorange="reversed"))         
 
             st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
-            insight("La <strong>Climatisation</strong> et le <strong>Bluetooth</strong> sont les équipements les plus fréquents. Les équipements connectés (Apple CarPlay, Android Auto) gagnent en popularité — un argument marketing fort pour les cibles jeunes.")
+            insight("La <strong>Climatisation</strong> et le <strong>Bluetooth</strong> sont les équipements les plus fréquents. Les équipements connectés (Apple CarPlay, Android Auto) sont également demandés — un argument marketing fort pour les cibles jeunes.")
 
         with e2:
             section("Carburants les plus demandés")
@@ -601,7 +603,7 @@ with tab2:
             
             fig.update_layout(yaxis_title="Part des véhicules (%)", xaxis_title="Carburants", showlegend=False)
             st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
-            insight("L'<strong>Essence</strong> domine largement (54 %), suivie de l'<strong>Hybride</strong> (19 %) et du <strong>Diesel</strong> (18 %). La part électrique reste faible (4 %) mais en croissance — à intégrer dans les communications.")
+            insight("L'<strong>Essence</strong> domine largement (54 %), suivie de l'<strong>Hybride</strong> (19 %) et du <strong>Diesel</strong> (18 %). La part électrique reste faible (4 %) — à intégrer dans les communications.")
 
         # ── Ligne 2 : Top 15 marques | Catégories ──
         v1, v2 = st.columns(2)
@@ -642,21 +644,7 @@ with tab2:
             st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
             insight("Les <strong>SUV & 4x4</strong> représentent 54 % des ventes. Les Citadines arrivent 2ème (24 %), prisées par les profils urbains. Ces deux catégories devraient concentrer l'essentiel des investissements marketing.")
 
-        section("Prix moyen par marque (Top 15)")
-        prix_marque = dff.groupby("VEHICULE_MARQUE")["PRIX_VENTE_TTC_COM"].mean().nlargest(15).reset_index()
-        prix_marque.columns = ["Marque", "Prix moyen"]
-        
-        fig = px.bar(prix_marque, x="Prix moyen", y="Marque", orientation="h",
-                         color="Prix moyen", color_continuous_scale=["#FEF9C3", WARNING])
-        
-        fig.update_traces(
-            hovertemplate="<br>Prix moyen : <b>%{x}€</b>"
-                        "<br>Marque : <b>%{y}</b>"
-                        "<extra></extra>")
-        
-        fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
-        st.plotly_chart(chart_defaults(fig, h=420), use_container_width=True)
-        insight("<strong>Tesla, BMW et Mercedes</strong> affichent les prix moyens les plus élevés. Les marques françaises se positionnent sur le segment médian (18 000–25 000 €), cœur de marché d'Aramisauto.")
+    
         
         # ── Ligne 3 : Distribution prix pleine largeur ──
         section("Distribution des prix — Véhicules Neuf (VN) vs Véhicules d'Occasion (VO)")
@@ -676,7 +664,7 @@ with tab2:
 
         fig.update_layout(yaxis_title="Part des transactions (%)")
         st.plotly_chart(chart_defaults(fig), use_container_width=True)
-        insight("Les <strong>VN</strong> se concentrent entre 20 000 et 35 000 €. Les <strong>VO</strong> sont plus dispersés avec un pic à 15 000 €. Prix moyen global : <strong>21 724 €</strong>.")
+        insight("Les <strong>véhicule neuf </strong> se concentrent entre 20 000 et 35 000 €. Les <strong>véhicule d'occasion</strong> sont plus dispersés avec un pic à 15 000 €. Prix moyen global : <strong>21 724 €</strong>.")
 
         section("Prix par boîte de vitesse et catégorie de véhicule")
         fig = px.box(dff, x="VEHICULE_BOITE_VITESSE", y="PRIX_VENTE_TTC_COM",
@@ -689,240 +677,254 @@ with tab2:
 
 
 # ════════════════════════════════════════
-# TAB 3 — CLUSTERING
+# TAB 3 — ANALYSE & HYPOTHÈSES
 # ════════════════════════════════════════
 with tab3:
-    st.markdown("#### Segmentation non supervisée de la clientèle")
+    st.markdown("#### Analyse exploratoire — Test des hypothèses marketing")
+    insight(
+        "Cet onglet teste <strong>3 hypothèses marketing</strong> à partir des données clients : "
+        "<br>• <strong>H1</strong> : Le prix du véhicule acheté augmente-t-il avec l'âge de l'acheteur ? "
+        "<br>• <strong>H2</strong> : Le genre influence-t-il la catégorie de véhicule achetée ? "
+        "<br>• <strong>H3</strong> : L'âge prédit-il le mode de financement choisi ? "
+        "<br><br>"
+        "H1 est testée par <strong>corrélation de Pearson</strong>. "
+        "H2 et H3 sont testées par <strong>test du Chi-deux</strong> puis synthétisées dans un "
+        "<strong>biplot ACM</strong> (Analyse des Correspondances Multiples) qui révèle les associations "
+        "entre toutes les modalités simultanément.",
+        title="ℹ️ Méthodologie"
+    )
 
-    with st.expander("ℹ️ Comment fonctionne cet onglet ?", expanded=False):
-        insight("L'algorithme regroupe automatiquement les clients en <em>k</em> segments homogènes en minimisant la variance à l'intérieur de chaque groupe. " \
-        "Les variables utilisées sont : <strong>Âge, Prix d'achat, Kilométrage, Distance à l'agence, Genre, Énergie et Catégorie du véhicule</strong>. " \
-        "Toutes les variables sont normalisées pour éviter les biais d'échelle. "
-        "<br><br> " \
-        "Utilisez le curseur ci-dessous pour explorer différents nombres de segments et trouver la segmentation la plus utile pour le marketing.", 
-        title="Qu'est-ce que le clustering K-Means ?")
-    
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-    col_param, _ = st.columns([1, 3])
-    with col_param:
-        n_clusters = st.slider("Nombre de segments (k)", 2, 8, 4)
+    # ════════════════════════════════════
+    # H1 — Prix ~ Âge
+    # ════════════════════════════════════
+    section("H1 — Le prix du véhicule augmente-t-il avec l'âge de l'acheteur ?")
+
+    h1_data = dff.dropna(subset=["AGE", "PRIX_VENTE_TTC_COM"]).copy()
+    r_val, p_val = stats.pearsonr(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"])
+
+    # Ligne de régression
+    m, b       = np.polyfit(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"], 1)
+    x_line     = np.linspace(h1_data["AGE"].min(), h1_data["AGE"].max(), 200)
+    y_line     = m * x_line + b
+
+    fig_h1 = px.scatter(
+        h1_data, x="AGE", y="PRIX_VENTE_TTC_COM",
+        color="GENDER_LABEL",
+        color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
+        opacity=0.4,
+        labels={"AGE": "Âge", "PRIX_VENTE_TTC_COM": "Prix d'achat (€)", "GENDER_LABEL": "Genre"},
+        hover_data=["VEHICULE_MARQUE", "VEHICULE_MODELE"]
+    )
+    fig_h1.add_trace(go.Scatter(
+        x=x_line, y=y_line, mode="lines",
+        line=dict(color="#0F172A", width=2, dash="dash"),
+        name="Régression linéaire", showlegend=True
+    ))
+    fig_h1.update_traces(marker=dict(size=5), selector=dict(mode="markers"))
+    st.plotly_chart(chart_defaults(fig_h1, h=400), use_container_width=True)
+
+    sig_label = "très fortement significatif" if p_val < 0.001 else ("significatif" if p_val < 0.05 else "non significatif")
+    confirmed = p_val < 0.05
+    box_color = "#D1FAE5" if confirmed else "#FEE2E2"
+    border_color = SUCCESS if confirmed else "#EF4444"
+    verdict_icon = "✅" if confirmed else "❌"
+    st.markdown(f"""
+    <div style="background:{box_color}; border-left:4px solid {border_color};
+                border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
+        <strong>{verdict_icon} H1 — Résultat</strong><br>
+        Corrélation de Pearson : <strong>r = {r_val:.3f}</strong> · p-value : <strong>{p_val:.2e}</strong> ({sig_label})<br>
+        {"La corrélation positive est confirmée : les clients plus âgés tendent à acheter des véhicules plus chers."
+         if confirmed else
+         "La corrélation n'est pas statistiquement significative sur ces données."}
+    </div>""", unsafe_allow_html=True)
+
+    insight(
+        f"Avec r = {r_val:.3f}, la corrélation est <strong>positive mais modérée</strong>. "
+        "L'âge explique une partie de la variance du budget, mais d'autres facteurs jouent aussi (genre, catégorie souhaitée). "
+        "<br><br>"
+        "👉 <strong>Usage marketing</strong> : les campagnes premium peuvent cibler les 45+ sans exclure les segments plus jeunes à fort budget.",
+        title="💡 Interprétation H1"
+    )
+
+    # ════════════════════════════════════
+    # H2 — Genre → Catégorie
+    # ════════════════════════════════════
+    section("H2 — Le genre influence-t-il la catégorie de véhicule achetée ?")
+
+    h2_data = dff.dropna(subset=["GENDER", "VEHICULE_CATEGORIE"]).copy()
+    ct_h2_raw = pd.crosstab(h2_data["GENDER_LABEL"], h2_data["VEHICULE_CATEGORIE"])
+    chi2_h2, p_h2, dof_h2, _ = stats.chi2_contingency(ct_h2_raw)
+
+    ct_h2_pct = ct_h2_raw.div(ct_h2_raw.sum(axis=1), axis=0) * 100
+    ct_h2_plot = ct_h2_pct.reset_index().melt(id_vars="GENDER_LABEL", var_name="Catégorie", value_name="Pct")
+
+    fig_h2 = px.bar(
+        ct_h2_plot, x="GENDER_LABEL", y="Pct", color="Catégorie",
+        barmode="stack", color_discrete_sequence=CHART_COLORS,
+        labels={"GENDER_LABEL": "Genre", "Pct": "Part (%)"},
+        text=ct_h2_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 5 else "")
+    )
+    fig_h2.update_traces(textposition="inside", insidetextanchor="middle")
+    fig_h2.update_layout(yaxis_title="Part (%)", xaxis_title="Genre", legend_title="Catégorie")
+    st.plotly_chart(chart_defaults(fig_h2, h=360), use_container_width=True)
+
+    sig_h2 = "très fortement significatif" if p_h2 < 0.001 else ("significatif" if p_h2 < 0.05 else "non significatif")
+    conf_h2 = p_h2 < 0.05
+    bc2 = "#D1FAE5" if conf_h2 else "#FEE2E2"
+    brd2 = SUCCESS if conf_h2 else "#EF4444"
+    st.markdown(f"""
+    <div style="background:{bc2}; border-left:4px solid {brd2};
+                border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
+        <strong>{"✅" if conf_h2 else "❌"} H2 — Résultat</strong><br>
+        Chi-deux : <strong>χ² = {chi2_h2:.1f}</strong> · ddl = {dof_h2} · p-value : <strong>{p_h2:.2e}</strong> ({sig_h2})<br>
+        {"Le genre est significativement associé à la catégorie de véhicule achetée."
+         if conf_h2 else
+         "Aucune association significative détectée entre genre et catégorie."}
+    </div>""", unsafe_allow_html=True)
+
+    insight(
+        "Le test du Chi-deux mesure si la distribution des catégories est <strong>indépendante du genre</strong>. "
+        "Un p < 0.05 signifie que les différences observées ne sont pas dues au hasard. "
+        "<br><br>"
+        "👉 <strong>Usage marketing</strong> : si H2 est confirmée, des campagnes segmentées par genre sur certaines catégories sont justifiées.",
+        title="💡 Interprétation H2"
+    )
+
+    # ════════════════════════════════════
+    # H3 — Âge → Financement
+    # ════════════════════════════════════
+    section("H3 — L'âge prédit-il le mode de financement choisi ?")
+
+    h3_data = dff.copy()
+    h3_data["FI_TYPE"] = h3_data["FI_TYPE"].fillna("Comptant")
+    h3_data = h3_data.dropna(subset=["AGE"]).copy()
+    h3_data["TRANCHE_AGE"] = pd.cut(
+        h3_data["AGE"], bins=[17, 25, 35, 45, 55, 65, 100],
+        labels=["18–25", "26–35", "36–45", "46–55", "56–65", "65+"]
+    )
+    h3_data = h3_data.dropna(subset=["TRANCHE_AGE"])
+
+    ct_h3_raw  = pd.crosstab(h3_data["TRANCHE_AGE"], h3_data["FI_TYPE"])
+    chi2_h3, p_h3, dof_h3, _ = stats.chi2_contingency(ct_h3_raw)
+
+    ct_h3_pct  = ct_h3_raw.div(ct_h3_raw.sum(axis=1), axis=0) * 100
+    ct_h3_plot = ct_h3_pct.reset_index().melt(id_vars="TRANCHE_AGE", var_name="Financement", value_name="Pct")
+    ct_h3_plot["TRANCHE_AGE"] = ct_h3_plot["TRANCHE_AGE"].astype(str)
+
+    fig_h3 = px.bar(
+        ct_h3_plot, x="TRANCHE_AGE", y="Pct", color="Financement",
+        barmode="stack", color_discrete_sequence=CHART_COLORS,
+        labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)"},
+        category_orders={"TRANCHE_AGE": ["18–25","26–35","36–45","46–55","56–65","65+"]},
+        text=ct_h3_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 6 else "")
+    )
+    fig_h3.update_traces(textposition="inside", insidetextanchor="middle")
+    fig_h3.update_layout(yaxis_title="Part (%)", xaxis_title="Tranche d'âge", legend_title="Financement")
+    st.plotly_chart(chart_defaults(fig_h3, h=360), use_container_width=True)
+
+    sig_h3 = "très fortement significatif" if p_h3 < 0.001 else ("significatif" if p_h3 < 0.05 else "non significatif")
+    conf_h3 = p_h3 < 0.05
+    bc3 = "#D1FAE5" if conf_h3 else "#FEE2E2"
+    brd3 = SUCCESS if conf_h3 else "#EF4444"
+    st.markdown(f"""
+    <div style="background:{bc3}; border-left:4px solid {brd3};
+                border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
+        <strong>{"✅" if conf_h3 else "❌"} H3 — Résultat</strong><br>
+        Chi-deux : <strong>χ² = {chi2_h3:.1f}</strong> · ddl = {dof_h3} · p-value : <strong>{p_h3:.2e}</strong> ({sig_h3})<br>
+        {"L'âge est significativement associé au mode de financement choisi."
+         if conf_h3 else
+         "Aucune association significative détectée entre âge et financement."}
+    </div>""", unsafe_allow_html=True)
+
+    insight(
+        "Une association significative permet d'adapter le discours commercial dès la prise de contact. "
+        "<br><br>"
+        "👉 <strong>Usage marketing</strong> : si H3 est confirmée, mettre en avant la LOA pour les jeunes "
+        "et les offres comptant/crédit pour les seniors dans les communications.",
+        title="💡 Interprétation H3"
+    )
+
+    # ════════════════════════════════════
+    # ACM — Biplot
+    # ════════════════════════════════════
+    section("ACM — Biplot des associations entre modalités")
+
+    insight(
+        "L'<strong>Analyse des Correspondances Multiples (ACM)</strong> synthétise H2 et H3 en une seule visualisation. "
+        "Les <strong>modalités proches</strong> sur le biplot ont tendance à co-apparaître dans les mêmes transactions. "
+        "Les <strong>modalités opposées</strong> s'excluent mutuellement.",
+        title="ℹ️ Comment lire le biplot ACM ?"
+    )
 
     @st.cache_data
-    def build_cluster_features(data):
-        num_cols = ["AGE", "PRIX_VENTE_TTC_COM", "VEHICULE_KM", "NEAREST_AGENCY_DISTANCE"]
-        features = data[num_cols].fillna(data[num_cols].median()).copy()
-        le = LabelEncoder()
-        features["GENDER_ENC"]    = le.fit_transform(data["GENDER"].fillna("H"))
-        features["ENERGIE_ENC"]   = le.fit_transform(data["VEHICULE_ENERGIE"].fillna("Essence"))
-        features["CATEGORIE_ENC"] = le.fit_transform(data["VEHICULE_CATEGORIE"].fillna("Autre"))
-        return features
+    def run_mca(data):
+        d = data.copy()
+        d["FI_TYPE"]     = d["FI_TYPE"].fillna("Comptant")
+        d["TRANCHE_AGE"] = pd.cut(
+            d["AGE"], bins=[17, 25, 35, 45, 55, 65, 100],
+            labels=["18-25","26-35","36-45","46-55","56-65","65+"]
+        )
+        d["TRANCHE_PRIX"] = pd.cut(
+            d["PRIX_VENTE_TTC_COM"],
+            bins=[0, 15000, 20000, 25000, 100000],
+            labels=["<15k","15-20k","20-25k",">25k"]
+        )
+        cols = ["TRANCHE_AGE","TRANCHE_PRIX","GENDER",
+                "VEHICULE_CATEGORIE","FI_TYPE","VEHICULE_ENERGIE","VEHICULE_TYPE"]
+        mca_data = d[cols].dropna().astype(str)
+        mca = prince.MCA(n_components=2, random_state=42)
+        mca.fit(mca_data)
+        col_coords = mca.column_coordinates(mca_data).reset_index()
+        col_coords.columns = ["modality", "Dim1", "Dim2"]
+        col_coords["variable"] = col_coords["modality"].str.split("__").str[0]
+        col_coords["label"]    = col_coords["modality"].str.split("__").str[1]
+        pct_var = mca.percentage_of_variance_
+        return col_coords, pct_var
 
-    @st.cache_data
-    def run_kmeans(data, k):
-        features = build_cluster_features(data)
-        X = StandardScaler().fit_transform(features)
-        km = KMeans(n_clusters=k, random_state=42, n_init=10)
-        labels = km.fit_predict(X)
-        sil = silhouette_score(X, labels)
-        coords = PCA(n_components=2).fit_transform(X)
-        return labels, sil, coords
+    col_coords, pct_var = run_mca(dff)
 
-    labels, sil_score, pca_coords = run_kmeans(dff, n_clusters)
-    dff = dff.copy()
-    dff["CLUSTER"]       = labels
-    dff["CLUSTER_LABEL"] = "Segment " + dff["CLUSTER"].astype(str)
-    dff["PCA_1"]         = pca_coords[:, 0]
-    dff["PCA_2"]         = pca_coords[:, 1]
+    var_labels = {
+        "TRANCHE_AGE":      "Tranche d'âge",
+        "TRANCHE_PRIX":     "Tranche de prix",
+        "GENDER":           "Genre",
+        "VEHICULE_CATEGORIE": "Catégorie",
+        "FI_TYPE":          "Financement",
+        "VEHICULE_ENERGIE": "Énergie",
+        "VEHICULE_TYPE":    "Type (VN/VO)",
+    }
+    col_coords["variable_label"] = col_coords["variable"].map(var_labels).fillna(col_coords["variable"])
 
-    m1, m2, m3 = st.columns(3)
-    sil_interp = "Excellent" if sil_score > 0.5 else ("Correct" if sil_score > 0.25 else "Faible — essayez un autre k")
-    with m1: st.metric("Score Silhouette", f"{sil_score:.3f}", delta=sil_interp)
-    with m2: st.metric("Segments créés", n_clusters)
-    with m3: st.metric("Clients analysés", f"{len(dff):,}")
-
-    warn_box("""
-    <strong>Score Silhouette</strong> : compris entre -1 et 1.
-    Un score <strong>proche de 1</strong> indique des segments bien séparés et compacts (idéal).
-    Un score <strong>proche de 0</strong> signifie que les clusters se chevauchent — changez le nombre de segments.
-    Sur ce dataset, un score entre 0.15 et 0.30 est attendu compte tenu de la diversité naturelle des profils clients.
-    """)
-
-    # ── ACP ──
-    section("Visualisation 2D des segments — Analyse en Composantes Principales (ACP)")
-    fig_pca = px.scatter(
-        dff, x="PCA_1", y="PCA_2", color="CLUSTER_LABEL",
-        opacity=0.55,
-        hover_data=["AGE", "PRIX_VENTE_TTC_COM", "VEHICULE_MARQUE", "VEHICULE_MODELE"],
+    fig_mca = px.scatter(
+        col_coords, x="Dim1", y="Dim2",
+        color="variable_label",
+        text="label",
         color_discrete_sequence=CHART_COLORS,
-        labels={"PCA_1": "Composante 1", "PCA_2": "Composante 2", "CLUSTER_LABEL": "Segment"}
+        labels={
+            "Dim1": f"Dimension 1 ({pct_var[0]:.1f}% de variance)",
+            "Dim2": f"Dimension 2 ({pct_var[1]:.1f}% de variance)",
+            "variable_label": "Variable"
+        }
     )
-    fig_pca.update_traces(marker=dict(size=5))
-    st.plotly_chart(chart_defaults(fig_pca, h=420), use_container_width=True)
-
-    insight("<strong>Comment lire ce graphique ?</strong><br> " \
-    "Chaque point représente un client. L'ACP compresse les 7 variables en 2 dimensions pour la visualisation. " \
-    "Des nuages <strong>bien séparés</strong> = segments distincts = campagnes très différenciées possibles. " \
-    "Un <strong>chevauchement</strong> = profils clients proches sur certaines dimensions — messages plus nuancés. "
-    "<br><br> " \
-    "👉 <strong>Conseil marketing</strong> : les segments éloignés les uns des autres méritent des offres et " \
-    "des canaux de communication radicalement différents.")
-
-    # ── Tableau profil ──
-    section("Profil moyen par segment")
-    cluster_profile = dff.groupby("CLUSTER").agg(
-        Nb_clients=("AGE", "count"),
-        Age_moyen=("AGE", "mean"),
-        Prix_moyen=("PRIX_VENTE_TTC_COM", "mean"),
-        KM_moyen=("VEHICULE_KM", "mean"),
-        Dist_agence=("NEAREST_AGENCY_DISTANCE", "mean"),
-    ).round(1).reset_index()
-
-    for col_agg, col_name in [("VEHICULE_ENERGIE", "Énergie dom."),
-                               ("VEHICULE_CATEGORIE", "Catégorie dom."),
-                               ("VEHICULE_MARQUE", "Marque fav.")]:
-        top = dff.groupby("CLUSTER")[col_agg].agg(lambda x: x.mode()[0]).reset_index()
-        top.columns = ["CLUSTER", col_name]
-        cluster_profile = cluster_profile.merge(top, on="CLUSTER")
-
-    cluster_profile.columns = ["Segment", "Nb clients", "Âge moy.", "Prix moy. (€)",
-                                "KM moy.", "Dist. agence (km)",
-                                "Énergie dom.", "Catégorie dom.", "Marque fav."]
-    st.dataframe(cluster_profile, hide_index=True, use_container_width=True)
-
-    insight("Ce tableau synthétise les caractéristiques <strong>moyennes</strong> de chaque segment. " \
-    "Focalisez-vous sur <strong>Prix moyen</strong> et <strong>Catégorie dominante</strong> pour évaluer la valeur commerciale de chaque groupe, " \
-    "et sur l'<strong>Âge moyen</strong> pour choisir les canaux de communication appropriés (digital vs. traditionnel).")
-
-    # ── Personas ──
-    section("Fiches Persona — Portrait de chaque segment")
-    badge_colors = ["#DBEAFE","#DCFCE7","#FEF9C3","#FCE7F3","#EDE9FE","#FFEDD5","#E0F2FE","#F0FDF4"]
-    text_colors  = [PRIMARY,   SUCCESS,  WARNING,  "#BE185D","#7C3AED","#EA580C","#0284C7","#15803D"]
-
-    cols_p = st.columns(min(n_clusters, 4))
-    for i in range(n_clusters):
-        row = cluster_profile.iloc[i]
-        c = i % 4
-        with cols_p[c % len(cols_p)]:
-            bg = badge_colors[i % len(badge_colors)]
-            tc = text_colors[i % len(text_colors)]
-            pct = round(100 * row["Nb clients"] / len(dff), 1)
-            st.markdown(f"""
-            <div class="persona-card">
-                <div class="persona-badge" style="background:{bg}; color:{tc}">Segment {i}</div>
-                <div class="persona-name">Groupe {i}</div>
-                <div class="persona-stat">👥 <b>{int(row['Nb clients']):,}</b> clients ({pct}%)</div>
-                <div class="persona-stat">🎂 Âge moyen : <b>{row['Âge moy.']} ans</b></div>
-                <div class="persona-stat">💶 Prix moyen : <b>{int(row['Prix moy. (€)']):,} €</b></div>
-                <div class="persona-stat">🛣️ KM moyen : <b>{int(row['KM moy.']):,} km</b></div>
-                <div class="persona-stat">🔋 Énergie : <b>{row['Énergie dom.']}</b></div>
-                <div class="persona-stat">🚗 Catégorie : <b>{row['Catégorie dom.']}</b></div>
-                <div class="persona-stat">⭐ Marque fav. : <b>{row['Marque fav.']}</b></div>
-            </div>""", unsafe_allow_html=True)
-
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    insight("Ces fiches permettent à l'équipe marketing de <strong>nommer chaque segment</strong> "
-    "(ex : 'Famille SUV Hybride', 'Jeune primo-accédant citadine', 'Senior berline premium'). "
-    "Chaque persona doit être associé à un <strong>message publicitaire, un canal et une offre spécifiques</strong> "
-    "pour maximiser l'efficacité des campagnes.", 
-    title="💡 Usage marketing des personas")
-
-    # ── Radar ──
-    section("Radar — Comparaison normalisée des segments")
-    raw_profile = dff.groupby("CLUSTER")[["AGE","PRIX_VENTE_TTC_COM","VEHICULE_KM","NEAREST_AGENCY_DISTANCE"]].mean()
-    raw_norm    = (raw_profile - raw_profile.min()) / (raw_profile.max() - raw_profile.min() + 1e-9)
-    raw_norm.columns = ["Âge", "Prix", "Kilométrage", "Distance agence"]
-
-    fig_radar = go.Figure()
-    cats = raw_norm.columns.tolist()
-    for i, row in raw_norm.iterrows():
-        vals = row.tolist() + [row.iloc[0]]
-        fig_radar.add_trace(go.Scatterpolar(
-            r=vals, theta=cats + [cats[0]], fill="toself",
-            name=f"Segment {i}",
-            line=dict(color=CHART_COLORS[i % len(CHART_COLORS)], width=2),
-            fillcolor=CHART_COLORS[i % len(CHART_COLORS)],
-            opacity=0.15,
-        ))
-    fig_radar.update_layout(
-        height=420, paper_bgcolor="white",
-        polar=dict(
-            bgcolor="white",
-            radialaxis=dict(visible=True, range=[0,1], gridcolor=BORDER, tickfont=dict(size=10)),
-            angularaxis=dict(gridcolor=BORDER)
-        ),
-        margin=dict(t=30, b=20),
-        font=dict(family="Inter"),
-        legend=dict(font=dict(size=11))
+    fig_mca.update_traces(
+        textposition="top center",
+        marker=dict(size=10),
+        textfont=dict(size=11)
     )
-    st.plotly_chart(fig_radar, use_container_width=True)
+    fig_mca.add_hline(y=0, line_dash="dot", line_color=BORDER, line_width=1)
+    fig_mca.add_vline(x=0, line_dash="dot", line_color=BORDER, line_width=1)
+    fig_mca.update_layout(legend_title="Variable")
+    st.plotly_chart(chart_defaults(fig_mca, h=520), use_container_width=True)
 
-    insight("<strong>Comment lire le radar ?</strong><br>" \
-    " Chaque axe représente une variable normalisée entre 0 et 1. La forme de chaque segment reflète son profil : "
-    "<br>• <strong>Grand et régulier</strong> = profil 'équilibré' sur toutes les dimensions "
-    "<br>• <strong>Pointu sur un axe</strong> = caractéristique forte et différenciante"
-    "<br><br>" \
-    "Exemple : un segment fort sur <strong>Prix</strong> et faible sur <strong>Kilométrage</strong> = acheteurs de VN ou quasi-neufs. " \
-    "Fort sur <strong>Kilométrage</strong> et faible sur <strong>Prix</strong> = acheteurs de VO à budget contraint.")
-
-    # ── Barres ──
-    ca, cb = st.columns(2)
-    with ca:
-        section("Énergie par segment")
-        ener_cl = dff.groupby(["CLUSTER_LABEL","VEHICULE_ENERGIE"]).size().reset_index(name="Nb")
-        fig = px.bar(ener_cl, x="CLUSTER_LABEL", y="Nb", color="VEHICULE_ENERGIE",
-                     barmode="stack", color_discrete_sequence=CHART_COLORS,
-                     labels={"CLUSTER_LABEL": "Segment", "Nb": "Transactions"})
-        st.plotly_chart(chart_defaults(fig), use_container_width=True)
-
-    with cb:
-        section("Catégorie par segment")
-        cat_cl = dff.groupby(["CLUSTER_LABEL","VEHICULE_CATEGORIE"]).size().reset_index(name="Nb")
-        fig = px.bar(cat_cl, x="CLUSTER_LABEL", y="Nb", color="VEHICULE_CATEGORIE",
-                     barmode="stack", color_discrete_sequence=CHART_COLORS,
-                     labels={"CLUSTER_LABEL": "Segment", "Nb": "Transactions"})
-        st.plotly_chart(chart_defaults(fig), use_container_width=True)
-
-    insight("Ces deux graphiques permettent de <strong>qualifier la préférence produit</strong> de chaque segment. " \
-    "Un segment dominé par des SUV Hybrides à prix élevé = cible <strong>premium / écologique</strong> → arguments confort + impact carbone. " \
-    "Un segment de Citadines Essence à faible kilométrage = <strong>jeunes actifs urbains</strong> sensibles au prix → promotions et financement facilité.", 
-    title="💡 Lecture combinée Énergie + Catégorie")
-
-    # ── Elbow ──
-    with st.expander("📈 Aide au choix du nombre de segments — Méthode du coude"):
-        insight("<strong>Comment choisir le bon k ?</strong><br>" \
-        "• <strong>Courbe d'inertie</strong> (bleue) : mesure la compacité des clusters. " \
-        "Elle décroît à chaque k ajouté. Cherchez le <em>coude</em> — le point où le gain devient marginal.<br> " \
-        "• <strong>Score Silhouette</strong> (rouge) : mesure la séparabilité entre clusters. " \
-        "Choisissez le k qui <strong>maximise ce score</strong>.<br><br> " \
-        "En règle générale, le k optimal se situe entre 3 et 6 sur des données retail.")
-
-        @st.cache_data
-        def compute_inertia(data):
-            X = StandardScaler().fit_transform(build_cluster_features(data))
-            inertias, sils = [], []
-            for k in range(2, 9):
-                km = KMeans(n_clusters=k, random_state=42, n_init=10)
-                lbl = km.fit_predict(X)
-                inertias.append(km.inertia_)
-                sils.append(silhouette_score(X, lbl))
-            return list(range(2, 9)), inertias, sils
-
-        ks, inertias, sils = compute_inertia(dff)
-        fig_elbow = make_subplots(specs=[[{"secondary_y": True}]])
-        fig_elbow.add_trace(
-            go.Scatter(x=ks, y=inertias, name="Inertie", mode="lines+markers",
-                       line=dict(color=PRIMARY, width=2), marker=dict(size=7)),
-            secondary_y=False)
-        fig_elbow.add_trace(
-            go.Scatter(x=ks, y=sils, name="Silhouette", mode="lines+markers",
-                       line=dict(color="#F87171", width=2, dash="dot"), marker=dict(size=7)),
-            secondary_y=True)
-        fig_elbow.update_layout(height=340, xaxis_title="k (nombre de segments)",
-                                paper_bgcolor="white", plot_bgcolor="white",
-                                font=dict(family="Inter"), margin=dict(t=10, b=10))
-        fig_elbow.update_yaxes(title_text="Inertie (↓ mieux)", secondary_y=False, gridcolor="#F1F5F9")
-        fig_elbow.update_yaxes(title_text="Silhouette (↑ mieux)", secondary_y=True)
-        st.plotly_chart(fig_elbow, use_container_width=True)
+    insight(
+        "<strong>Comment exploiter ce biplot ?</strong><br>"
+        "• Les modalités d'une même variable (même couleur) se répartissent selon leur profil d'achat.<br>"
+        "• Les modalités de variables différentes proches = associations fortes (ex : LOA + jeune + VN).<br>"
+        "• Les modalités opposées au centre = profils distincts.<br><br>"
+        "👉 Chaque 'cluster' visuel de modalités = un profil client typique à cibler avec un message cohérent.",
+        title="💡 Synthèse ACM"
+    )
 
 
 # ════════════════════════════════════════
