@@ -556,9 +556,9 @@ with tab2:
 
     # ── VÉHICULES ──
     with sub_vehicule:
-        # ── Ligne 1 : Équipements | Carburant ──
         e1, e2 = st.columns(2)
         with e1:
+            # Graphique sur le Top 10 des équipements les plus demandés
             section("Top 10 équipements les plus demandés")
 
             def parse_equip(val):
@@ -585,6 +585,7 @@ with tab2:
             insight("La <strong>Climatisation</strong> et le <strong>Bluetooth</strong> sont les équipements les plus fréquents. Les équipements connectés (Apple CarPlay, Android Auto) sont également demandés — un argument marketing fort pour les cibles jeunes.")
 
         with e2:
+            # Graphique sur les carburants les plus demandés
             section("Carburants les plus demandés")
             energie = dff["VEHICULE_ENERGIE"].value_counts().reset_index()
             energie.columns = ["Carburant", "Nb"]
@@ -605,9 +606,9 @@ with tab2:
             st.plotly_chart(chart_defaults(fig, h=380), use_container_width=True)
             insight("L'<strong>Essence</strong> domine largement (54 %), suivie de l'<strong>Hybride</strong> (19 %) et du <strong>Diesel</strong> (18 %). La part électrique reste faible (4 %) — à intégrer dans les communications.")
 
-        # ── Ligne 2 : Top 15 marques | Catégories ──
         v1, v2 = st.columns(2)
         with v1:
+            # Graphique sur le Top 15 des marques les plus vendues
             section("Top 15 marques vendues")
             marques = dff["VEHICULE_MARQUE"].value_counts().head(15).reset_index()
             marques.columns = ["Marque", "Nb"]
@@ -645,8 +646,7 @@ with tab2:
             insight("Les <strong>SUV & 4x4</strong> représentent 54 % des ventes. Les Citadines arrivent 2ème (24 %), prisées par les profils urbains. Ces deux catégories devraient concentrer l'essentiel des investissements marketing.")
 
     
-        
-        # ── Ligne 3 : Distribution prix pleine largeur ──
+        # Graphique sur la distribution des prix (VN vs VO)
         section("Distribution des prix — Véhicules Neuf (VN) vs Véhicules d'Occasion (VO)")
         fig = px.histogram(dff, x="PRIX_VENTE_TTC_COM", nbins=32,
                            color="VEHICULE_TYPE",
@@ -688,9 +688,7 @@ with tab3:
         "H2 & H3 — Chi-deux et ACM",
     ])
 
-    # ════════════════════════════════════
     # SOUS-ONGLET 1 — MÉTHODOLOGIE
-    # ════════════════════════════════════
     with sub_methodo:
         st.markdown("#### Présentation des hypothèses et intuitions")
 
@@ -781,18 +779,17 @@ with tab3:
             title="💡 Cohérence des hypothèses"
         )
 
-    # ════════════════════════════════════
-    # SOUS-ONGLET 2 — H1
-    # ════════════════════════════════════
+    # SOUS-ONGLET 2
+    # Hypothèse H1 - Le prix du véhicule augmente-t-il avec l'âge de l'acheteur ?
     with sub_h1:
         section("H1 — Le prix du véhicule augmente-t-il avec l'âge de l'acheteur ?")
 
         h1_data = dff.dropna(subset=["AGE", "PRIX_VENTE_TTC_COM"]).copy()
         r_val, p_val = stats.pearsonr(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"])
 
-        m, b       = np.polyfit(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"], 1)
-        x_line     = np.linspace(h1_data["AGE"].min(), h1_data["AGE"].max(), 200)
-        y_line     = m * x_line + b
+        m, b = np.polyfit(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"], 1)
+        x_line = np.linspace(h1_data["AGE"].min(), h1_data["AGE"].max(), 200)
+        y_line = m * x_line + b
 
         fig_h1 = px.scatter(
             h1_data, x="AGE", y="PRIX_VENTE_TTC_COM",
@@ -800,14 +797,22 @@ with tab3:
             color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
             opacity=0.4,
             labels={"AGE": "Âge", "PRIX_VENTE_TTC_COM": "Prix d'achat (€)", "GENDER_LABEL": "Genre"},
-            hover_data=["VEHICULE_MARQUE", "VEHICULE_MODELE"]
+            custom_data=["GENDER_LABEL", "VEHICULE_MARQUE", "VEHICULE_MODELE"]
         )
         fig_h1.add_trace(go.Scatter(
             x=x_line, y=y_line, mode="lines",
             line=dict(color="#0F172A", width=2, dash="dash"),
             name="Régression linéaire", showlegend=True
         ))
-        fig_h1.update_traces(marker=dict(size=5), selector=dict(mode="markers"))
+
+        fig_h1.update_traces(marker=dict(size=5), selector=dict(mode="markers"), 
+                             hovertemplate="<br>Genre : <b>%{customdata[0]}</b>"
+                                        "<br>Âge : <b>%{x}</b>"
+                                        "<br>Prix : <b>%{y} €</b>"
+                                        "<br>Marque : <b>%{customdata[1]}</b>"
+                                        "<br>Modèle : <b>%{customdata[2]}</b>"
+                                        "<extra></extra>")
+        
         st.plotly_chart(chart_defaults(fig_h1, h=400), use_container_width=True)
 
         sig_label = "très fortement significatif" if p_val < 0.001 else ("significatif" if p_val < 0.05 else "non significatif")
@@ -815,6 +820,7 @@ with tab3:
         box_color = "#D1FAE5" if confirmed else "#FEE2E2"
         border_color = SUCCESS if confirmed else "#EF4444"
         verdict_icon = "✅" if confirmed else "❌"
+        
         st.markdown(f"""
         <div style="background:{box_color}; border-left:4px solid {border_color};
                     border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
@@ -833,12 +839,10 @@ with tab3:
             title="💡 Interprétation H1"
         )
 
-    # ════════════════════════════════════
     # SOUS-ONGLET 3 — H2, H3 & ACM
-    # ════════════════════════════════════
     with sub_h23:
 
-        # H2
+        # Hypothèse H2 - Le genre influence-t-il la catégorie de véhicule achetée ?
         section("H2 — Le genre influence-t-il la catégorie de véhicule achetée ?")
 
         h2_data = dff.dropna(subset=["GENDER", "VEHICULE_CATEGORIE"]).copy()
@@ -852,9 +856,20 @@ with tab3:
             ct_h2_plot, x="GENDER_LABEL", y="Pct", color="Catégorie",
             barmode="stack", color_discrete_sequence=CHART_COLORS,
             labels={"GENDER_LABEL": "Genre", "Pct": "Part (%)"},
-            text=ct_h2_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 5 else "")
+            text=ct_h2_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 5 else ""),
+            custom_data=["Catégorie"]
         )
-        fig_h2.update_traces(textposition="inside", insidetextanchor="middle")
+
+        fig_h2.update_traces(
+            textposition="inside",
+            insidetextanchor="middle",
+            hovertemplate=
+                "<br>Catégorie : <b>%{customdata[0]}</b>"
+                "<br>Genre : <b>%{x}</b>"
+                "<br>Part : <b>%{y:.1f} %</b>"
+                "<extra></extra>"
+        )
+        
         fig_h2.update_layout(yaxis_title="Part (%)", xaxis_title="Genre", legend_title="Catégorie")
         st.plotly_chart(chart_defaults(fig_h2, h=360), use_container_width=True)
 
@@ -882,7 +897,7 @@ with tab3:
 
         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-        # H3
+        # Hypothèse H3 -  L'âge prédit-il le mode de financement choisi ?
         section("H3 — L'âge prédit-il le mode de financement choisi ?")
 
         h3_data = dff.copy()
@@ -906,9 +921,20 @@ with tab3:
             barmode="stack", color_discrete_sequence=CHART_COLORS,
             labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)"},
             category_orders={"TRANCHE_AGE": ["18–25","26–35","36–45","46–55","56–65","65+"]},
-            text=ct_h3_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 6 else "")
+            text=ct_h3_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 6 else ""),
+            custom_data=["Financement"]
         )
-        fig_h3.update_traces(textposition="inside", insidetextanchor="middle")
+
+        fig_h3.update_traces(
+            textposition="inside",
+            insidetextanchor="middle",
+            hovertemplate=
+                "<br>Financement : <b>%{fullData.name}</b>"
+                "<br>Tranche d'âge : <b>%{x}</b>"
+                "<br>Part : <b>%{y:.1f} %</b>"
+                "<extra></extra>"
+        )
+
         fig_h3.update_layout(yaxis_title="Part (%)", xaxis_title="Tranche d'âge", legend_title="Financement")
         st.plotly_chart(chart_defaults(fig_h3, h=360), use_container_width=True)
 
@@ -1008,9 +1034,9 @@ with tab3:
         insight(
             "<strong>Comment exploiter ce biplot ?</strong><br>"
             "• Les modalités d'une même variable (même couleur) se répartissent selon leur profil d'achat.<br>"
-            "• Les modalités de variables différentes proches = associations fortes (ex : LOA + jeune + VN).<br>"
+            "• Les modalités de variables différentes proches = associations fortes (ex : Crédit + VO + 26-35 ans).<br>"
             "• Les modalités opposées au centre = profils distincts.<br><br>"
-            "👉 Chaque 'cluster' visuel de modalités = un profil client typique à cibler avec un message cohérent.",
+            "👉 Chaque cluster visuel de modalités = un profil client typique à cibler avec un message cohérent.",
             title="💡 Synthèse ACM"
         )
 
@@ -1133,6 +1159,7 @@ with tab4:
                         les emails de nurturing, les relances ou les landing pages produit.""",
                         title="💡 Comment utiliser ces résultats ?")
 
+                # Graphique comparatif du prix des véhicules recommandés
                 section("Comparatif prix des véhicules recommandés vs votre budget")
                 fig_reco = px.bar(
                     reco, x="VEHICULE_MODELE", y="prix_moyen",
@@ -1141,7 +1168,16 @@ with tab4:
                     text=reco["prix_moyen"].apply(lambda x: f"{int(x):,} €"),
                     labels={"VEHICULE_MODELE": "Modèle", "prix_moyen": "Prix moyen (€)", "VEHICULE_MARQUE": "Marque"}
                 )
-                fig_reco.update_traces(textposition="outside")
+
+                fig_reco.update_traces(
+                    textposition="outside",
+                    hovertemplate=
+                        "<br>Marque : <b>%{fullData.name}</b>"
+                        "<br>Modèle : <b>%{x}</b>"
+                        "<br>Prix moyen : <b>%{y:,.0f} €</b>"
+                        "<extra></extra>"
+                )
+
                 fig_reco.add_hline(
                     y=r_budget, line_dash="dot", line_color="#EF4444",
                     annotation_text=f"Budget max : {r_budget:,} €",
