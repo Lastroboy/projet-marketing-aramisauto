@@ -236,7 +236,7 @@ for key, val in DEFAULTS.items():
 
 with st.sidebar:
     st.markdown("### Filtres")
-    st.caption("Appliqués aux onglets Analyse & Clustering")
+    st.caption("Appliqués aux onglets Analyse")
     st.markdown("")
 
     gender_filter = st.multiselect("Genre", ["Homme", "Femme"], key="gender_filter")
@@ -681,250 +681,338 @@ with tab2:
 # ════════════════════════════════════════
 with tab3:
     st.markdown("#### Analyse exploratoire — Test des hypothèses marketing")
-    insight(
-        "Cet onglet teste <strong>3 hypothèses marketing</strong> à partir des données clients : "
-        "<br>• <strong>H1</strong> : Le prix du véhicule acheté augmente-t-il avec l'âge de l'acheteur ? "
-        "<br>• <strong>H2</strong> : Le genre influence-t-il la catégorie de véhicule achetée ? "
-        "<br>• <strong>H3</strong> : L'âge prédit-il le mode de financement choisi ? "
-        "<br><br>"
-        "H1 est testée par <strong>corrélation de Pearson</strong>. "
-        "H2 et H3 sont testées par <strong>test du Chi-deux</strong> puis synthétisées dans un "
-        "<strong>biplot ACM</strong> (Analyse des Correspondances Multiples) qui révèle les associations "
-        "entre toutes les modalités simultanément.",
-        title="ℹ️ Méthodologie"
-    )
 
-    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+    sub_methodo, sub_h1, sub_h23 = st.tabs([
+        "📋  Méthodologie & Hypothèses",
+        "H1 — Corrélation de Pearson",
+        "H2 & H3 — Chi-deux et ACM",
+    ])
 
     # ════════════════════════════════════
-    # H1 — Prix ~ Âge
+    # SOUS-ONGLET 1 — MÉTHODOLOGIE
     # ════════════════════════════════════
-    section("H1 — Le prix du véhicule augmente-t-il avec l'âge de l'acheteur ?")
+    with sub_methodo:
+        st.markdown("#### Présentation des hypothèses et intuitions")
 
-    h1_data = dff.dropna(subset=["AGE", "PRIX_VENTE_TTC_COM"]).copy()
-    r_val, p_val = stats.pearsonr(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"])
-
-    # Ligne de régression
-    m, b       = np.polyfit(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"], 1)
-    x_line     = np.linspace(h1_data["AGE"].min(), h1_data["AGE"].max(), 200)
-    y_line     = m * x_line + b
-
-    fig_h1 = px.scatter(
-        h1_data, x="AGE", y="PRIX_VENTE_TTC_COM",
-        color="GENDER_LABEL",
-        color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
-        opacity=0.4,
-        labels={"AGE": "Âge", "PRIX_VENTE_TTC_COM": "Prix d'achat (€)", "GENDER_LABEL": "Genre"},
-        hover_data=["VEHICULE_MARQUE", "VEHICULE_MODELE"]
-    )
-    fig_h1.add_trace(go.Scatter(
-        x=x_line, y=y_line, mode="lines",
-        line=dict(color="#0F172A", width=2, dash="dash"),
-        name="Régression linéaire", showlegend=True
-    ))
-    fig_h1.update_traces(marker=dict(size=5), selector=dict(mode="markers"))
-    st.plotly_chart(chart_defaults(fig_h1, h=400), use_container_width=True)
-
-    sig_label = "très fortement significatif" if p_val < 0.001 else ("significatif" if p_val < 0.05 else "non significatif")
-    confirmed = p_val < 0.05
-    box_color = "#D1FAE5" if confirmed else "#FEE2E2"
-    border_color = SUCCESS if confirmed else "#EF4444"
-    verdict_icon = "✅" if confirmed else "❌"
-    st.markdown(f"""
-    <div style="background:{box_color}; border-left:4px solid {border_color};
-                border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
-        <strong>{verdict_icon} H1 — Résultat</strong><br>
-        Corrélation de Pearson : <strong>r = {r_val:.3f}</strong> · p-value : <strong>{p_val:.2e}</strong> ({sig_label})<br>
-        {"La corrélation positive est confirmée : les clients plus âgés tendent à acheter des véhicules plus chers."
-         if confirmed else
-         "La corrélation n'est pas statistiquement significative sur ces données."}
-    </div>""", unsafe_allow_html=True)
-
-    insight(
-        f"Avec r = {r_val:.3f}, la corrélation est <strong>positive mais modérée</strong>. "
-        "L'âge explique une partie de la variance du budget, mais d'autres facteurs jouent aussi (genre, catégorie souhaitée). "
-        "<br><br>"
-        "👉 <strong>Usage marketing</strong> : les campagnes premium peuvent cibler les 45+ sans exclure les segments plus jeunes à fort budget.",
-        title="💡 Interprétation H1"
-    )
-
-    # ════════════════════════════════════
-    # H2 — Genre → Catégorie
-    # ════════════════════════════════════
-    section("H2 — Le genre influence-t-il la catégorie de véhicule achetée ?")
-
-    h2_data = dff.dropna(subset=["GENDER", "VEHICULE_CATEGORIE"]).copy()
-    ct_h2_raw = pd.crosstab(h2_data["GENDER_LABEL"], h2_data["VEHICULE_CATEGORIE"])
-    chi2_h2, p_h2, dof_h2, _ = stats.chi2_contingency(ct_h2_raw)
-
-    ct_h2_pct = ct_h2_raw.div(ct_h2_raw.sum(axis=1), axis=0) * 100
-    ct_h2_plot = ct_h2_pct.reset_index().melt(id_vars="GENDER_LABEL", var_name="Catégorie", value_name="Pct")
-
-    fig_h2 = px.bar(
-        ct_h2_plot, x="GENDER_LABEL", y="Pct", color="Catégorie",
-        barmode="stack", color_discrete_sequence=CHART_COLORS,
-        labels={"GENDER_LABEL": "Genre", "Pct": "Part (%)"},
-        text=ct_h2_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 5 else "")
-    )
-    fig_h2.update_traces(textposition="inside", insidetextanchor="middle")
-    fig_h2.update_layout(yaxis_title="Part (%)", xaxis_title="Genre", legend_title="Catégorie")
-    st.plotly_chart(chart_defaults(fig_h2, h=360), use_container_width=True)
-
-    sig_h2 = "très fortement significatif" if p_h2 < 0.001 else ("significatif" if p_h2 < 0.05 else "non significatif")
-    conf_h2 = p_h2 < 0.05
-    bc2 = "#D1FAE5" if conf_h2 else "#FEE2E2"
-    brd2 = SUCCESS if conf_h2 else "#EF4444"
-    st.markdown(f"""
-    <div style="background:{bc2}; border-left:4px solid {brd2};
-                border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
-        <strong>{"✅" if conf_h2 else "❌"} H2 — Résultat</strong><br>
-        Chi-deux : <strong>χ² = {chi2_h2:.1f}</strong> · ddl = {dof_h2} · p-value : <strong>{p_h2:.2e}</strong> ({sig_h2})<br>
-        {"Le genre est significativement associé à la catégorie de véhicule achetée."
-         if conf_h2 else
-         "Aucune association significative détectée entre genre et catégorie."}
-    </div>""", unsafe_allow_html=True)
-
-    insight(
-        "Le test du Chi-deux mesure si la distribution des catégories est <strong>indépendante du genre</strong>. "
-        "Un p < 0.05 signifie que les différences observées ne sont pas dues au hasard. "
-        "<br><br>"
-        "👉 <strong>Usage marketing</strong> : si H2 est confirmée, des campagnes segmentées par genre sur certaines catégories sont justifiées.",
-        title="💡 Interprétation H2"
-    )
-
-    # ════════════════════════════════════
-    # H3 — Âge → Financement
-    # ════════════════════════════════════
-    section("H3 — L'âge prédit-il le mode de financement choisi ?")
-
-    h3_data = dff.copy()
-    h3_data["FI_TYPE"] = h3_data["FI_TYPE"].fillna("Comptant")
-    h3_data = h3_data.dropna(subset=["AGE"]).copy()
-    h3_data["TRANCHE_AGE"] = pd.cut(
-        h3_data["AGE"], bins=[17, 25, 35, 45, 55, 65, 100],
-        labels=["18–25", "26–35", "36–45", "46–55", "56–65", "65+"]
-    )
-    h3_data = h3_data.dropna(subset=["TRANCHE_AGE"])
-
-    ct_h3_raw  = pd.crosstab(h3_data["TRANCHE_AGE"], h3_data["FI_TYPE"])
-    chi2_h3, p_h3, dof_h3, _ = stats.chi2_contingency(ct_h3_raw)
-
-    ct_h3_pct  = ct_h3_raw.div(ct_h3_raw.sum(axis=1), axis=0) * 100
-    ct_h3_plot = ct_h3_pct.reset_index().melt(id_vars="TRANCHE_AGE", var_name="Financement", value_name="Pct")
-    ct_h3_plot["TRANCHE_AGE"] = ct_h3_plot["TRANCHE_AGE"].astype(str)
-
-    fig_h3 = px.bar(
-        ct_h3_plot, x="TRANCHE_AGE", y="Pct", color="Financement",
-        barmode="stack", color_discrete_sequence=CHART_COLORS,
-        labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)"},
-        category_orders={"TRANCHE_AGE": ["18–25","26–35","36–45","46–55","56–65","65+"]},
-        text=ct_h3_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 6 else "")
-    )
-    fig_h3.update_traces(textposition="inside", insidetextanchor="middle")
-    fig_h3.update_layout(yaxis_title="Part (%)", xaxis_title="Tranche d'âge", legend_title="Financement")
-    st.plotly_chart(chart_defaults(fig_h3, h=360), use_container_width=True)
-
-    sig_h3 = "très fortement significatif" if p_h3 < 0.001 else ("significatif" if p_h3 < 0.05 else "non significatif")
-    conf_h3 = p_h3 < 0.05
-    bc3 = "#D1FAE5" if conf_h3 else "#FEE2E2"
-    brd3 = SUCCESS if conf_h3 else "#EF4444"
-    st.markdown(f"""
-    <div style="background:{bc3}; border-left:4px solid {brd3};
-                border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
-        <strong>{"✅" if conf_h3 else "❌"} H3 — Résultat</strong><br>
-        Chi-deux : <strong>χ² = {chi2_h3:.1f}</strong> · ddl = {dof_h3} · p-value : <strong>{p_h3:.2e}</strong> ({sig_h3})<br>
-        {"L'âge est significativement associé au mode de financement choisi."
-         if conf_h3 else
-         "Aucune association significative détectée entre âge et financement."}
-    </div>""", unsafe_allow_html=True)
-
-    insight(
-        "Une association significative permet d'adapter le discours commercial dès la prise de contact. "
-        "<br><br>"
-        "👉 <strong>Usage marketing</strong> : si H3 est confirmée, mettre en avant la LOA pour les jeunes "
-        "et les offres comptant/crédit pour les seniors dans les communications.",
-        title="💡 Interprétation H3"
-    )
-
-    # ════════════════════════════════════
-    # ACM — Biplot
-    # ════════════════════════════════════
-    section("ACM — Biplot des associations entre modalités")
-
-    insight(
-        "L'<strong>Analyse des Correspondances Multiples (ACM)</strong> synthétise H2 et H3 en une seule visualisation. "
-        "Les <strong>modalités proches</strong> sur le biplot ont tendance à co-apparaître dans les mêmes transactions. "
-        "Les <strong>modalités opposées</strong> s'excluent mutuellement.",
-        title="ℹ️ Comment lire le biplot ACM ?"
-    )
-
-    @st.cache_data
-    def run_mca(data):
-        d = data.copy()
-        d["FI_TYPE"]     = d["FI_TYPE"].fillna("Comptant")
-        d["TRANCHE_AGE"] = pd.cut(
-            d["AGE"], bins=[17, 25, 35, 45, 55, 65, 100],
-            labels=["18-25","26-35","36-45","46-55","56-65","65+"]
+        insight(
+            "Avant de lancer les tests statistiques, nous formulons trois hypothèses marketing "
+            "fondées sur des intuitions comportementales. Chaque hypothèse est ensuite vérifiée "
+            "de manière rigoureuse dans les sous-onglets suivants.<br><br>"
+            "<strong>Méthodes mobilisées</strong> :<br>"
+            "• <strong>H1</strong> → Corrélation de Pearson (variable continue × variable continue)<br>"
+            "• <strong>H2 & H3</strong> → Test du Chi-deux (variable catégorielle × variable catégorielle) "
+            "puis Analyse des Correspondances Multiples (ACM) pour une vision synthétique",
+            title="ℹ️ Démarche analytique"
         )
-        d["TRANCHE_PRIX"] = pd.cut(
-            d["PRIX_VENTE_TTC_COM"],
-            bins=[0, 15000, 20000, 25000, 100000],
-            labels=["<15k","15-20k","20-25k",">25k"]
+
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+        # Carte H1
+        st.markdown("""
+        <div style="background:#DBEAFE;border-left:5px solid #1B4FD8;border-radius:10px;
+                    padding:20px 24px;margin-bottom:18px;">
+            <div style="font-size:11px;font-weight:700;color:#1E40AF;letter-spacing:.08em;
+                        margin-bottom:6px;">HYPOTHÈSE 1</div>
+            <div style="font-size:17px;font-weight:800;color:#1B4FD8;margin-bottom:10px;">
+                H1 — Le prix du véhicule acheté augmente-t-il avec l'âge de l'acheteur ?
+            </div>
+            <div style="font-size:13px;color:#1E3A5F;line-height:1.65;">
+                <strong>Intuition :</strong> En avançant dans la vie, un individu accumule du capital —
+                grâce à l'évolution de sa carrière, à l'épargne et à la transmission patrimoniale.
+                Plus on est âgé, plus on dispose théoriquement des moyens d'acquérir un véhicule
+                de gamme supérieure. On s'attend donc à une <strong>corrélation positive</strong>
+                entre l'âge et le prix d'achat du véhicule.<br><br>
+                <strong>Test utilisé :</strong> Corrélation de Pearson ·
+                <strong>Variable X :</strong> Âge ·
+                <strong>Variable Y :</strong> Prix de vente TTC
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+        # Carte H2
+        st.markdown("""
+        <div style="background:#DCFCE7;border-left:5px solid #16A34A;border-radius:10px;
+                    padding:20px 24px;margin-bottom:18px;">
+            <div style="font-size:11px;font-weight:700;color:#14532D;letter-spacing:.08em;
+                        margin-bottom:6px;">HYPOTHÈSE 2</div>
+            <div style="font-size:17px;font-weight:800;color:#15803D;margin-bottom:10px;">
+                H2 — Le genre influence-t-il la catégorie de véhicule achetée ?
+            </div>
+            <div style="font-size:13px;color:#14532D;line-height:1.65;">
+                <strong>Intuition :</strong> Des représentations sociales différenciées associent
+                souvent les hommes à des véhicules puissants (berlines, sportives) et les femmes
+                à des véhicules perçus comme pratiques ou compacts (citadines, SUV familiaux).
+                Si ces préférences se retrouvent dans les données, cela justifierait une
+                <strong>segmentation créative par genre</strong> selon la catégorie de véhicule.<br><br>
+                <strong>Test utilisé :</strong> Chi-deux d'indépendance ·
+                <strong>Variable 1 :</strong> Genre ·
+                <strong>Variable 2 :</strong> Catégorie de véhicule
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+        # Carte H3
+        st.markdown("""
+        <div style="background:#FEF9C3;border-left:5px solid #F59E0B;border-radius:10px;
+                    padding:20px 24px;margin-bottom:18px;">
+            <div style="font-size:11px;font-weight:700;color:#78350F;letter-spacing:.08em;
+                        margin-bottom:6px;">HYPOTHÈSE 3</div>
+            <div style="font-size:17px;font-weight:800;color:#B45309;margin-bottom:10px;">
+                H3 — L'âge prédit-il le mode de financement choisi ?
+            </div>
+            <div style="font-size:13px;color:#78350F;line-height:1.65;">
+                <strong>Intuition :</strong> Les jeunes acheteurs, dont les revenus sont encore
+                en construction et l'épargne limitée, auraient davantage recours à des solutions
+                de financement étalées dans le temps — LOA ou crédit. À l'inverse, les clients
+                plus âgés, ayant accumulé un patrimoine, disposeraient plus facilement de liquidités
+                pour régler comptant. On s'attend donc à un <strong>glissement progressif de la LOA
+                vers le paiement comptant</strong> à mesure que l'âge augmente.<br><br>
+                <strong>Test utilisé :</strong> Chi-deux d'indépendance ·
+                <strong>Variable 1 :</strong> Tranche d'âge ·
+                <strong>Variable 2 :</strong> Mode de financement
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        insight(
+            "Ces trois hypothèses forment un <strong>fil conducteur cohérent</strong> : "
+            "l'âge structure à la fois le budget d'achat (H1) et les préférences de financement (H3), "
+            "tandis que le genre oriente le choix de la catégorie de véhicule (H2). "
+            "Ensemble, elles permettent de définir des <strong>profils clients actionnables</strong> "
+            "pour les équipes marketing et commerciales.",
+            title="💡 Cohérence des hypothèses"
         )
-        cols = ["TRANCHE_AGE","TRANCHE_PRIX","GENDER",
-                "VEHICULE_CATEGORIE","FI_TYPE","VEHICULE_ENERGIE","VEHICULE_TYPE"]
-        mca_data = d[cols].dropna().astype(str)
-        mca = prince.MCA(n_components=2, random_state=42)
-        mca.fit(mca_data)
-        col_coords = mca.column_coordinates(mca_data).reset_index()
-        col_coords.columns = ["modality", "Dim1", "Dim2"]
-        col_coords["variable"] = col_coords["modality"].str.split("__").str[0]
-        col_coords["label"]    = col_coords["modality"].str.split("__").str[1]
-        pct_var = mca.percentage_of_variance_
-        return col_coords, pct_var
 
-    col_coords, pct_var = run_mca(dff)
+    # ════════════════════════════════════
+    # SOUS-ONGLET 2 — H1
+    # ════════════════════════════════════
+    with sub_h1:
+        section("H1 — Le prix du véhicule augmente-t-il avec l'âge de l'acheteur ?")
 
-    var_labels = {
-        "TRANCHE_AGE":      "Tranche d'âge",
-        "TRANCHE_PRIX":     "Tranche de prix",
-        "GENDER":           "Genre",
-        "VEHICULE_CATEGORIE": "Catégorie",
-        "FI_TYPE":          "Financement",
-        "VEHICULE_ENERGIE": "Énergie",
-        "VEHICULE_TYPE":    "Type (VN/VO)",
-    }
-    col_coords["variable_label"] = col_coords["variable"].map(var_labels).fillna(col_coords["variable"])
+        h1_data = dff.dropna(subset=["AGE", "PRIX_VENTE_TTC_COM"]).copy()
+        r_val, p_val = stats.pearsonr(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"])
 
-    fig_mca = px.scatter(
-        col_coords, x="Dim1", y="Dim2",
-        color="variable_label",
-        text="label",
-        color_discrete_sequence=CHART_COLORS,
-        labels={
-            "Dim1": f"Dimension 1 ({pct_var[0]:.1f}% de variance)",
-            "Dim2": f"Dimension 2 ({pct_var[1]:.1f}% de variance)",
-            "variable_label": "Variable"
+        m, b       = np.polyfit(h1_data["AGE"], h1_data["PRIX_VENTE_TTC_COM"], 1)
+        x_line     = np.linspace(h1_data["AGE"].min(), h1_data["AGE"].max(), 200)
+        y_line     = m * x_line + b
+
+        fig_h1 = px.scatter(
+            h1_data, x="AGE", y="PRIX_VENTE_TTC_COM",
+            color="GENDER_LABEL",
+            color_discrete_map={"Homme": PRIMARY, "Femme": "#F87171"},
+            opacity=0.4,
+            labels={"AGE": "Âge", "PRIX_VENTE_TTC_COM": "Prix d'achat (€)", "GENDER_LABEL": "Genre"},
+            hover_data=["VEHICULE_MARQUE", "VEHICULE_MODELE"]
+        )
+        fig_h1.add_trace(go.Scatter(
+            x=x_line, y=y_line, mode="lines",
+            line=dict(color="#0F172A", width=2, dash="dash"),
+            name="Régression linéaire", showlegend=True
+        ))
+        fig_h1.update_traces(marker=dict(size=5), selector=dict(mode="markers"))
+        st.plotly_chart(chart_defaults(fig_h1, h=400), use_container_width=True)
+
+        sig_label = "très fortement significatif" if p_val < 0.001 else ("significatif" if p_val < 0.05 else "non significatif")
+        confirmed = p_val < 0.05
+        box_color = "#D1FAE5" if confirmed else "#FEE2E2"
+        border_color = SUCCESS if confirmed else "#EF4444"
+        verdict_icon = "✅" if confirmed else "❌"
+        st.markdown(f"""
+        <div style="background:{box_color}; border-left:4px solid {border_color};
+                    border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
+            <strong>{verdict_icon} H1 — Résultat</strong><br>
+            Corrélation de Pearson : <strong>r = {r_val:.3f}</strong> · p-value : <strong>{p_val:.2e}</strong> ({sig_label})<br>
+            {"La corrélation positive est confirmée : les clients plus âgés tendent à acheter des véhicules plus chers."
+             if confirmed else
+             "La corrélation n'est pas statistiquement significative sur ces données."}
+        </div>""", unsafe_allow_html=True)
+
+        insight(
+            f"Avec r = {r_val:.3f}, la corrélation est <strong>positive mais modérée</strong>. "
+            "L'âge explique une partie de la variance du budget, mais d'autres facteurs jouent aussi (genre, catégorie souhaitée). "
+            "<br><br>"
+            "👉 <strong>Usage marketing</strong> : les campagnes premium peuvent cibler les 45+ sans exclure les segments plus jeunes à fort budget.",
+            title="💡 Interprétation H1"
+        )
+
+    # ════════════════════════════════════
+    # SOUS-ONGLET 3 — H2, H3 & ACM
+    # ════════════════════════════════════
+    with sub_h23:
+
+        # H2
+        section("H2 — Le genre influence-t-il la catégorie de véhicule achetée ?")
+
+        h2_data = dff.dropna(subset=["GENDER", "VEHICULE_CATEGORIE"]).copy()
+        ct_h2_raw = pd.crosstab(h2_data["GENDER_LABEL"], h2_data["VEHICULE_CATEGORIE"])
+        chi2_h2, p_h2, dof_h2, _ = stats.chi2_contingency(ct_h2_raw)
+
+        ct_h2_pct = ct_h2_raw.div(ct_h2_raw.sum(axis=1), axis=0) * 100
+        ct_h2_plot = ct_h2_pct.reset_index().melt(id_vars="GENDER_LABEL", var_name="Catégorie", value_name="Pct")
+
+        fig_h2 = px.bar(
+            ct_h2_plot, x="GENDER_LABEL", y="Pct", color="Catégorie",
+            barmode="stack", color_discrete_sequence=CHART_COLORS,
+            labels={"GENDER_LABEL": "Genre", "Pct": "Part (%)"},
+            text=ct_h2_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 5 else "")
+        )
+        fig_h2.update_traces(textposition="inside", insidetextanchor="middle")
+        fig_h2.update_layout(yaxis_title="Part (%)", xaxis_title="Genre", legend_title="Catégorie")
+        st.plotly_chart(chart_defaults(fig_h2, h=360), use_container_width=True)
+
+        sig_h2 = "très fortement significatif" if p_h2 < 0.001 else ("significatif" if p_h2 < 0.05 else "non significatif")
+        conf_h2 = p_h2 < 0.05
+        bc2 = "#D1FAE5" if conf_h2 else "#FEE2E2"
+        brd2 = SUCCESS if conf_h2 else "#EF4444"
+        st.markdown(f"""
+        <div style="background:{bc2}; border-left:4px solid {brd2};
+                    border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
+            <strong>{"✅" if conf_h2 else "❌"} H2 — Résultat</strong><br>
+            Chi-deux : <strong>χ² = {chi2_h2:.1f}</strong> · ddl = {dof_h2} · p-value : <strong>{p_h2:.2e}</strong> ({sig_h2})<br>
+            {"Le genre est significativement associé à la catégorie de véhicule achetée."
+             if conf_h2 else
+             "Aucune association significative détectée entre genre et catégorie."}
+        </div>""", unsafe_allow_html=True)
+
+        insight(
+            "Le test du Chi-deux mesure si la distribution des catégories est <strong>indépendante du genre</strong>. "
+            "Un p < 0.05 signifie que les différences observées ne sont pas dues au hasard. "
+            "<br><br>"
+            "👉 <strong>Usage marketing</strong> : si H2 est confirmée, des campagnes segmentées par genre sur certaines catégories sont justifiées.",
+            title="💡 Interprétation H2"
+        )
+
+        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+        # H3
+        section("H3 — L'âge prédit-il le mode de financement choisi ?")
+
+        h3_data = dff.copy()
+        h3_data["FI_TYPE"] = h3_data["FI_TYPE"].fillna("Comptant")
+        h3_data = h3_data.dropna(subset=["AGE"]).copy()
+        h3_data["TRANCHE_AGE"] = pd.cut(
+            h3_data["AGE"], bins=[17, 25, 35, 45, 55, 65, 100],
+            labels=["18–25", "26–35", "36–45", "46–55", "56–65", "65+"]
+        )
+        h3_data = h3_data.dropna(subset=["TRANCHE_AGE"])
+
+        ct_h3_raw  = pd.crosstab(h3_data["TRANCHE_AGE"], h3_data["FI_TYPE"])
+        chi2_h3, p_h3, dof_h3, _ = stats.chi2_contingency(ct_h3_raw)
+
+        ct_h3_pct  = ct_h3_raw.div(ct_h3_raw.sum(axis=1), axis=0) * 100
+        ct_h3_plot = ct_h3_pct.reset_index().melt(id_vars="TRANCHE_AGE", var_name="Financement", value_name="Pct")
+        ct_h3_plot["TRANCHE_AGE"] = ct_h3_plot["TRANCHE_AGE"].astype(str)
+
+        fig_h3 = px.bar(
+            ct_h3_plot, x="TRANCHE_AGE", y="Pct", color="Financement",
+            barmode="stack", color_discrete_sequence=CHART_COLORS,
+            labels={"TRANCHE_AGE": "Tranche d'âge", "Pct": "Part (%)"},
+            category_orders={"TRANCHE_AGE": ["18–25","26–35","36–45","46–55","56–65","65+"]},
+            text=ct_h3_plot["Pct"].apply(lambda x: f"{x:.0f}%" if x > 6 else "")
+        )
+        fig_h3.update_traces(textposition="inside", insidetextanchor="middle")
+        fig_h3.update_layout(yaxis_title="Part (%)", xaxis_title="Tranche d'âge", legend_title="Financement")
+        st.plotly_chart(chart_defaults(fig_h3, h=360), use_container_width=True)
+
+        sig_h3 = "très fortement significatif" if p_h3 < 0.001 else ("significatif" if p_h3 < 0.05 else "non significatif")
+        conf_h3 = p_h3 < 0.05
+        bc3 = "#D1FAE5" if conf_h3 else "#FEE2E2"
+        brd3 = SUCCESS if conf_h3 else "#EF4444"
+        st.markdown(f"""
+        <div style="background:{bc3}; border-left:4px solid {brd3};
+                    border-radius:8px; padding:14px 18px; margin:10px 0 16px; font-size:0.875rem;">
+            <strong>{"✅" if conf_h3 else "❌"} H3 — Résultat</strong><br>
+            Chi-deux : <strong>χ² = {chi2_h3:.1f}</strong> · ddl = {dof_h3} · p-value : <strong>{p_h3:.2e}</strong> ({sig_h3})<br>
+            {"L'âge est significativement associé au mode de financement choisi."
+             if conf_h3 else
+             "Aucune association significative détectée entre âge et financement."}
+        </div>""", unsafe_allow_html=True)
+
+        insight(
+            "Une association significative permet d'adapter le discours commercial dès la prise de contact. "
+            "<br><br>"
+            "👉 <strong>Usage marketing</strong> : si H3 est confirmée, mettre en avant la LOA pour les jeunes "
+            "et les offres comptant/crédit pour les seniors dans les communications.",
+            title="💡 Interprétation H3"
+        )
+
+        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+        # ACM
+        section("ACM — Biplot des associations entre modalités")
+
+        insight(
+            "L'<strong>Analyse des Correspondances Multiples (ACM)</strong> synthétise H2 et H3 en une seule visualisation. "
+            "Les <strong>modalités proches</strong> sur le biplot ont tendance à co-apparaître dans les mêmes transactions. "
+            "Les <strong>modalités opposées</strong> s'excluent mutuellement.",
+            title="ℹ️ Comment lire le biplot ACM ?"
+        )
+
+        @st.cache_data
+        def run_mca(data):
+            d = data.copy()
+            d["FI_TYPE"]     = d["FI_TYPE"].fillna("Comptant")
+            d["TRANCHE_AGE"] = pd.cut(
+                d["AGE"], bins=[17, 25, 35, 45, 55, 65, 100],
+                labels=["18-25","26-35","36-45","46-55","56-65","65+"]
+            )
+            d["TRANCHE_PRIX"] = pd.cut(
+                d["PRIX_VENTE_TTC_COM"],
+                bins=[0, 15000, 20000, 25000, 100000],
+                labels=["<15k","15-20k","20-25k",">25k"]
+            )
+            cols = ["TRANCHE_AGE","TRANCHE_PRIX","GENDER",
+                    "VEHICULE_CATEGORIE","FI_TYPE","VEHICULE_ENERGIE","VEHICULE_TYPE"]
+            mca_data = d[cols].dropna().astype(str)
+            mca = prince.MCA(n_components=2, random_state=42)
+            mca.fit(mca_data)
+            col_coords = mca.column_coordinates(mca_data).reset_index()
+            col_coords.columns = ["modality", "Dim1", "Dim2"]
+            col_coords["variable"] = col_coords["modality"].str.split("__").str[0]
+            col_coords["label"]    = col_coords["modality"].str.split("__").str[1]
+            pct_var = mca.percentage_of_variance_
+            return col_coords, pct_var
+
+        col_coords, pct_var = run_mca(dff)
+
+        var_labels = {
+            "TRANCHE_AGE":        "Tranche d'âge",
+            "TRANCHE_PRIX":       "Tranche de prix",
+            "GENDER":             "Genre",
+            "VEHICULE_CATEGORIE": "Catégorie",
+            "FI_TYPE":            "Financement",
+            "VEHICULE_ENERGIE":   "Énergie",
+            "VEHICULE_TYPE":      "Type (VN/VO)",
         }
-    )
-    fig_mca.update_traces(
-        textposition="top center",
-        marker=dict(size=10),
-        textfont=dict(size=11)
-    )
-    fig_mca.add_hline(y=0, line_dash="dot", line_color=BORDER, line_width=1)
-    fig_mca.add_vline(x=0, line_dash="dot", line_color=BORDER, line_width=1)
-    fig_mca.update_layout(legend_title="Variable")
-    st.plotly_chart(chart_defaults(fig_mca, h=520), use_container_width=True)
+        col_coords["variable_label"] = col_coords["variable"].map(var_labels).fillna(col_coords["variable"])
 
-    insight(
-        "<strong>Comment exploiter ce biplot ?</strong><br>"
-        "• Les modalités d'une même variable (même couleur) se répartissent selon leur profil d'achat.<br>"
-        "• Les modalités de variables différentes proches = associations fortes (ex : LOA + jeune + VN).<br>"
-        "• Les modalités opposées au centre = profils distincts.<br><br>"
-        "👉 Chaque 'cluster' visuel de modalités = un profil client typique à cibler avec un message cohérent.",
-        title="💡 Synthèse ACM"
-    )
+        fig_mca = px.scatter(
+            col_coords, x="Dim1", y="Dim2",
+            color="variable_label",
+            text="label",
+            color_discrete_sequence=CHART_COLORS,
+            labels={
+                "Dim1": f"Dimension 1 ({pct_var[0]:.1f}% de variance)",
+                "Dim2": f"Dimension 2 ({pct_var[1]:.1f}% de variance)",
+                "variable_label": "Variable"
+            }
+        )
+        fig_mca.update_traces(
+            textposition="top center",
+            marker=dict(size=10),
+            textfont=dict(size=11)
+        )
+        fig_mca.add_hline(y=0, line_dash="dot", line_color=BORDER, line_width=1)
+        fig_mca.add_vline(x=0, line_dash="dot", line_color=BORDER, line_width=1)
+        fig_mca.update_layout(legend_title="Variable")
+        st.plotly_chart(chart_defaults(fig_mca, h=520), use_container_width=True)
+
+        insight(
+            "<strong>Comment exploiter ce biplot ?</strong><br>"
+            "• Les modalités d'une même variable (même couleur) se répartissent selon leur profil d'achat.<br>"
+            "• Les modalités de variables différentes proches = associations fortes (ex : LOA + jeune + VN).<br>"
+            "• Les modalités opposées au centre = profils distincts.<br><br>"
+            "👉 Chaque 'cluster' visuel de modalités = un profil client typique à cibler avec un message cohérent.",
+            title="💡 Synthèse ACM"
+        )
 
 
 # ════════════════════════════════════════
@@ -965,12 +1053,13 @@ with tab4:
     with col1:
         r_age    = st.slider("Âge", 18, 90, 35)
         r_budget = st.slider("Budget maximum (€)", 5000, 60000, 20000, step=500)
+    AUCUNE_PREF = "Pas de préférence"
     with col2:
         r_gender  = st.selectbox("Genre", ["H","F"], format_func=lambda x: "Homme" if x=="H" else "Femme")
-        r_energie = st.selectbox("Énergie préférée", sorted(df["VEHICULE_ENERGIE"].unique().tolist()))
+        r_energie = st.selectbox("Énergie préférée", [AUCUNE_PREF] + sorted(df["VEHICULE_ENERGIE"].dropna().unique().tolist()))
     with col3:
-        r_categorie = st.selectbox("Catégorie souhaitée", df["VEHICULE_CATEGORIE"].unique().tolist())
-        r_boite     = st.selectbox("Boîte de vitesse", ["Boite manuelle","Boite auto."])
+        r_categorie = st.selectbox("Catégorie souhaitée", [AUCUNE_PREF] + sorted(df["VEHICULE_CATEGORIE"].dropna().unique().tolist()))
+        r_boite     = st.selectbox("Boîte de vitesse", [AUCUNE_PREF, "Boite manuelle", "Boite auto."])
     r_km_max = st.slider("Kilométrage maximum (km)", 0, 160000, 50000, step=5000)
 
     st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
@@ -982,9 +1071,11 @@ with tab4:
                 except: return 0
 
             g_enc = safe_enc(le_g, r_gender)
-            e_enc = safe_enc(le_e, r_energie)
-            c_enc = safe_enc(le_c, r_categorie)
-            b_enc = safe_enc(le_b, r_boite)
+
+            # Pour "Pas de préférence" : on passe la moyenne de la feature (→ 0 après scaling = neutre)
+            e_enc = reco_scaler.mean_[4] if r_energie   == AUCUNE_PREF else safe_enc(le_e, r_energie)
+            c_enc = reco_scaler.mean_[5] if r_categorie == AUCUNE_PREF else safe_enc(le_c, r_categorie)
+            b_enc = reco_scaler.mean_[6] if r_boite     == AUCUNE_PREF else safe_enc(le_b, r_boite)
 
             input_scaled = reco_scaler.transform(
                 np.array([[r_age, r_budget, r_km_max / 2, g_enc, e_enc, c_enc, b_enc]])
@@ -1032,8 +1123,10 @@ with tab4:
                             </div>
                         </div>""", unsafe_allow_html=True)
 
-                insight(f"""Les véhicules listés correspondent à ceux achetés par des clients au profil similaire dans l'historique 
-                        (<strong>{r_age} ans, budget {r_budget:,} €, {r_energie} · {r_categorie}</strong>).
+                pref_energie  = r_energie   if r_energie   != AUCUNE_PREF else "toutes énergies"
+                pref_cat      = r_categorie if r_categorie != AUCUNE_PREF else "toutes catégories"
+                insight(f"""Les véhicules listés correspondent à ceux achetés par des clients au profil similaire dans l'historique
+                        (<strong>{r_age} ans, budget {r_budget:,} €, {pref_energie} · {pref_cat}</strong>).
                         Le modèle #1 est celui le plus fréquemment acheté parmi les 20 clients les plus proches.
                         <br><br>
                         👉 <strong>Pour l'équipe commerciale</strong> : utilisez ces résultats pour personnaliser
