@@ -65,4 +65,4 @@ L'application s'ouvre automatiquement sur [http://localhost:8501](http://localho
 
 ## 👥 Auteurs
 
-Noa Delaporte, Sarah Scalart et Yuna Cann — Étudiant(e)s en M1 MAS 2025/2026 · Université de Rennes
+Noa Delaporte, Sarah Scalart et Yuna Cann — Étudiant(e)s en M1 MAS 2025/2026 — Université de Rennes 2
