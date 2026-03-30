@@ -1,52 +1,68 @@
-# Projet de marketing pour Aramisauto
-Comprendre le profil des clients chez Aramisauto pour l'équipe de marketing
+# 🚗 Aramisauto — Analyse des Profils Clients
 
-## Peut être à rajouter plus tard
-- Répartition géographique (carte interactive). st.map pour la répartition géographique
-## Chose à modifier
+Application Streamlit interactive pour explorer les profils clients d'Aramisauto, tester des hypothèses marketing et générer des recommandations de véhicules personnalisées.
 
-Dans les bulles à retenir [TERMINE]
-- Corriger l'affichage [FAIT]
+---
 
-Dans la zone des filtres [TERMINE]
-- Ajouter un bouton reset rapide [FAIT]
-- Rajouter le filtre type de livraiso ? Pertinent ou pas [FAIT]
+## 📁 Structure du projet
 
-Dans la page de présentation [TERMINE]
-- Pas de camembert / pas de graphique [FAIT]
-- On enlève la bulle à retenir [FAIT]
-- Changer l'age moyen du véhicule et la calculer en fonction de la date d'achat [FAIT]
-- On enlève le tableau des noms de variables [FAIT]
-- On enlèe le tableau pipeline blabla [FAIT]
+```
+projet/
+├── app.py
+├── requirements.txt
+├── README.md
+└── data/
+    └── df_master.csv
+```
 
-Dans analyse exploratoire [A CONFIRMER]
-- Changer tous les graphiques [FAIT]
-- Supprimer la heatmap [FAIT]
-- Changer le graphique sur les carburants [FAIT]
-- Rajouter des bulles statistiques pour que ça saute au yeux [A CONFIRMER]
+---
 
-Pour la partie client on veut les graphiques suivant : [A CONFIRMER]
-- Le type de véhcule par tranche d'age. [FAIT]
-- Le sexe le plus représenté. [FAIT]
-- Le type de financement par tranche d'age. [FAIT]
-- Mode de livraison [FAIT]
-- Top 20 des villes [FAIT]
+## 🚀 Lancement rapide
 
-Pour la partie véhicule on veut les graphiques suivant : [A CONFIRMER UN GRAPHIQUE]
-- Les 10 équipements les plus demandés. (On garde) et à vérifier [FAIT]
-- Le carburant le plus demandé (On vérifie) [FAIT]
-- Top 15 marques vendues [FAIT]
-- Les catégories de véhicules (bar plot) [FAIT]
-- Distributions du prix selon les véhicules neuf et d'occasion (ON GARDE) juste modification de l'ordonnée en pourcentage [FAIT]
+**1. Cloner le dépôt et se placer dans le dossier**
+```bash
+cd aramisauto
+```
 
-Dans Clustering Clients
-- Rajouter un pragraphe sur nos 3 hypothèses
-- Tout refaire
-- Faire un algo des KNN
-- Faire un graphique et colorer les points
-- Faire une segmentation RFM (dans le cours) [A REVOIR]
+**2. Créer un environnement virtuel (recommandé)**
+```bash
+python -m venv venv
+source venv/bin/activate        # Mac / Linux
+venv\Scripts\activate           # Windows
+```
 
-Dans recommandation
-- On veut que cette page utilise notre modèle des KNN pour que nos informations saisies nous renvoies le vhéhicule le plus similaire
+**3. Installer les dépendances**
+```bash
+pip install -r requirements.txt
+```
 
+**4. Lancer l'application**
+```bash
+streamlit run app.py
+```
 
+L'application s'ouvre automatiquement sur [http://localhost:8501](http://localhost:8501).
+
+---
+
+## 📊 Contenu de l'application
+
+| Onglet | Description |
+|---|---|
+| 🏠 Présentation | KPIs globaux et synthèse des insights marketing |
+| 📊 Analyse Exploratoire | Profils clients et profils véhicules |
+| 🔬 Analyse & Hypothèses | Tests statistiques : Pearson, Chi-deux, ACM |
+| 🎯 Recommandation | Moteur de recommandation KNN personnalisé |
+
+---
+
+## ⚙️ Prérequis
+
+- Python **3.9+**
+- Le fichier **`data/df_master.csv`** doit être présent avant de lancer l'application
+
+---
+
+## 👥 Auteurs
+
+Noa Delaporte, Sarah Scalart et Yuna Cann — Étudiant(e)s en M1 MAS 2025/2026 · Université de Rennes
